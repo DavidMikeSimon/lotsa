@@ -1,0 +1,6 @@
+[package]
+name = "lotsa_rust"
+version = "0.1.0"
+authors = ["David Simon <davidsimon@swellinvesting.com>"]
+
+[dependencies]
