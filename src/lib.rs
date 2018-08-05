@@ -1,3 +1,7 @@
+#![feature(test)]
+
+extern crate test;
+
 use std::ops::Index;
 use std::ops::IndexMut;
 
@@ -143,11 +147,8 @@ impl<'a> Iterator for BlocksMatchingIterator<'a> {
 
 #[cfg(test)]
 mod tests {
-  use Point;
-  use BlockType;
-  use BlockView;
-  use Chunk;
-  use UNKNOWN;
+  use super::*;
+  use test::Bencher;
 
   const COBBLE: BlockType = BlockType(37);
 
@@ -182,5 +183,23 @@ mod tests {
     assert_eq!(iter.next().unwrap().pos(), Point::new(2, 2, 2));
     assert_eq!(iter.next().unwrap().pos(), Point::new(3, 3, 3));
     assert!(iter.next().is_none());
+  }
+
+  #[bench]
+  fn bench_get_matching_blocks(b: &mut Bencher) {
+    let mut c = Chunk::new();
+    c.set_block_type(Point::new(1, 1, 1), COBBLE);
+    c.set_block_type(Point::new(2, 2, 2), COBBLE);
+    c.set_block_type(Point::new(3, 3, 3), COBBLE);
+
+    fn is_cobble(b: BlockView) -> bool { b.block_type == COBBLE };
+
+    b.iter(|| {
+      let mut iter = c.blocks_matching(is_cobble);
+      iter.next();
+      iter.next();
+      iter.next();
+      iter.next();
+    });
   }
 }
