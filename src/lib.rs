@@ -1,3 +1,6 @@
+use std::ops::Index;
+use std::ops::IndexMut;
+
 pub const CHUNK_WIDTH: u8 = 32;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -37,9 +40,25 @@ impl<'a> BlockView<'a> {
   pub fn pos(&self) -> Point { self.pos }
 }
 
+type BlockTypesArray = [[[BlockType; CHUNK_WIDTH as usize]; CHUNK_WIDTH as usize]; CHUNK_WIDTH as usize];
+
+impl Index<Point> for BlockTypesArray {
+  type Output = BlockType;
+
+  fn index(&self, pos: Point) -> &BlockType {
+    self.get(pos.x as usize).unwrap().get(pos.y as usize).unwrap().get(pos.z as usize).unwrap()
+  }
+}
+
+impl IndexMut<Point> for BlockTypesArray {
+  fn index_mut(&mut self, pos: Point) -> &mut BlockType {
+    self.get_mut(pos.x as usize).unwrap().get_mut(pos.y as usize).unwrap().get_mut(pos.z as usize).unwrap()
+  }
+}
+
 #[derive(Clone, Copy, Debug)]
 pub struct Chunk {
-  block_types: [[[BlockType; CHUNK_WIDTH as usize]; CHUNK_WIDTH as usize]; CHUNK_WIDTH as usize],
+  block_types: BlockTypesArray,
 }
 
 impl Chunk {
@@ -52,19 +71,19 @@ impl Chunk {
   pub fn get_block(&self, pos: Point) -> BlockView {
     BlockView {
       chunk: self,
-      block_type: self.block_types[pos.x as usize][pos.y as usize][pos.z as usize],
+      block_type: self.block_types[pos],
       pos: pos,
     }
   }
 
   pub fn set_block_type(&mut self, pos: Point, block_type: BlockType) {
-    self.block_types[pos.x as usize][pos.y as usize][pos.z as usize] = block_type;
+    self.block_types[pos] = block_type;
   }
 
   pub fn blocks_matching(&self, condition: BlockCondition) -> BlocksMatchingIterator {
     BlocksMatchingIterator {
       chunk: self,
-      pos: Point { x: 0, y: 0, z: 0 },
+      pos: Point::new(0, 0, 0),
       condition: condition,
     }
   }
