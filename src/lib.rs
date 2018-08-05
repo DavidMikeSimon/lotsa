@@ -6,6 +6,8 @@ use std::ops::Index;
 use std::ops::IndexMut;
 
 pub const CHUNK_WIDTH: u8 = 32;
+pub const CHUNK_WIDTH_E2: usize = (CHUNK_WIDTH as usize)*(CHUNK_WIDTH as usize);
+pub const CHUNK_WIDTH_E3: usize = (CHUNK_WIDTH as usize)*CHUNK_WIDTH_E2;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct BlockType(pub u8);
@@ -21,39 +23,40 @@ pub const EMPTY: BlockType = BlockType(1);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Point {
-  x: u8,
-  y: u8,
-  z: u8,
+  n: u16,
 }
 
 impl Point {
   pub fn new(x: u8, y: u8, z: u8) -> Self {
-    Point { x: x, y: y, z: z }
+    if x >= CHUNK_WIDTH { panic!("x is out of range") }
+    if y >= CHUNK_WIDTH { panic!("y is out of range") }
+    if z >= CHUNK_WIDTH { panic!("z is out of range") }
+    Point { n: ((x as usize)*CHUNK_WIDTH_E2 + (y as usize)*(CHUNK_WIDTH as usize) + (z as usize)) as u16 }
+  }
+
+  pub fn x(&self) -> u8 {
+    ((self.n/(CHUNK_WIDTH_E2 as u16)) % (CHUNK_WIDTH as u16)) as u8
+  }
+
+  pub fn y(&self) -> u8 {
+    ((self.n/(CHUNK_WIDTH as u16)) % (CHUNK_WIDTH as u16)) as u8
+  }
+
+  pub fn z(&self) -> u8 {
+    (self.n % (CHUNK_WIDTH as u16)) as u8
   }
 
   pub fn increment(&mut self) -> bool {
-    if self.x == CHUNK_WIDTH-1 {
-      if self.y == CHUNK_WIDTH-1 {
-        if self.z == CHUNK_WIDTH-1 {
-          return false;
-        } else {
-          self.x = 0;
-          self.y = 0;
-          self.z += 1;
-        }
-      } else {
-        self.x = 0;
-        self.y += 1;
-      }
+    if self.n == CHUNK_WIDTH_E3 as u16 - 1 {
+      return false;
     } else {
-      self.x += 1;
+      self.n += 1;
+      return true;
     }
-
-    return true;
   }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 pub struct BlockView<'a> {
   chunk: &'a Chunk,
   block_type: BlockType,
@@ -65,23 +68,23 @@ impl<'a> BlockView<'a> {
   pub fn pos(&self) -> Point { self.pos }
 }
 
-type BlockTypesArray = [[[BlockType; CHUNK_WIDTH as usize]; CHUNK_WIDTH as usize]; CHUNK_WIDTH as usize];
+type BlockTypesArray = [BlockType; CHUNK_WIDTH_E3 as usize];
 
 impl Index<Point> for BlockTypesArray {
   type Output = BlockType;
 
   fn index(&self, pos: Point) -> &BlockType {
-    self.get(pos.x as usize).unwrap().get(pos.y as usize).unwrap().get(pos.z as usize).unwrap()
+    self.get(pos.n as usize).unwrap()
   }
 }
 
 impl IndexMut<Point> for BlockTypesArray {
   fn index_mut(&mut self, pos: Point) -> &mut BlockType {
-    self.get_mut(pos.x as usize).unwrap().get_mut(pos.y as usize).unwrap().get_mut(pos.z as usize).unwrap()
+    self.get_mut(pos.n as usize).unwrap()
   }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 pub struct Chunk {
   block_types: BlockTypesArray,
 }
@@ -89,7 +92,7 @@ pub struct Chunk {
 impl Chunk {
   pub fn new() -> Chunk {
     Chunk {
-      block_types: [[[UNKNOWN; CHUNK_WIDTH as usize]; CHUNK_WIDTH as usize]; CHUNK_WIDTH as usize],
+      block_types: [UNKNOWN; CHUNK_WIDTH_E3],
     }
   }
 
@@ -137,6 +140,20 @@ impl<'a> Iterator for BlocksMatchingIterator<'a> {
     loop {
       if self.done { return None; }
       let block = self.chunk.get_block(self.pos);
+
+      // self.pos.x += 1;
+      // if self.pos.x == CHUNK_WIDTH {
+      //   self.pos.x = 0;
+      //   self.pos.y += 1;
+      //   if self.pos.y == CHUNK_WIDTH {
+      //     self.pos.y = 0;
+      //     self.pos.z += 1;
+      //     if self.pos.z == CHUNK_WIDTH {
+      //       return None;
+      //     }
+      //   }
+      // }
+
       let incremented = self.pos.increment();
       if !incremented { self.done = true; }
       if (self.condition)(block) { return Some(block); }
@@ -151,6 +168,19 @@ mod tests {
   use test::Bencher;
 
   const COBBLE: BlockType = BlockType(37);
+
+  #[test]
+  fn test_point_splitting() {
+    let p = Point::new(0, 0, 0);
+    assert_eq!(p.x(), 0);
+    assert_eq!(p.y(), 0);
+    assert_eq!(p.z(), 0);
+
+    let p = Point::new(1, 2, 3);
+    assert_eq!(p.x(), 1);
+    assert_eq!(p.y(), 2);
+    assert_eq!(p.z(), 3);
+  }
 
   #[test]
   fn test_get_block() {
