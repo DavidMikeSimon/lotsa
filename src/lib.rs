@@ -26,6 +26,27 @@ impl Point {
   pub fn new(x: u8, y: u8, z: u8) -> Self {
     Point { x: x, y: y, z: z }
   }
+
+  pub fn increment(&mut self) -> bool {
+    if self.x == CHUNK_WIDTH-1 {
+      if self.y == CHUNK_WIDTH-1 {
+        if self.z == CHUNK_WIDTH-1 {
+          return false;
+        } else {
+          self.x = 0;
+          self.y = 0;
+          self.z += 1;
+        }
+      } else {
+        self.x = 0;
+        self.y += 1;
+      }
+    } else {
+      self.x += 1;
+    }
+
+    return true;
+  }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -81,11 +102,7 @@ impl Chunk {
   }
 
   pub fn blocks_matching(&self, condition: BlockCondition) -> BlocksMatchingIterator {
-    BlocksMatchingIterator {
-      chunk: self,
-      pos: Point::new(0, 0, 0),
-      condition: condition,
-    }
+    BlocksMatchingIterator::new(self, condition)
   }
 }
 
@@ -94,7 +111,19 @@ pub type BlockCondition = for<'a> fn(BlockView) -> bool;
 pub struct BlocksMatchingIterator<'a> {
   chunk: &'a Chunk,
   pos: Point,
+  done: bool,
   condition: BlockCondition,
+}
+
+impl<'a> BlocksMatchingIterator<'a> {
+  fn new(chunk: &'a Chunk, condition: BlockCondition) -> BlocksMatchingIterator {
+    BlocksMatchingIterator {
+      chunk: chunk,
+      pos: Point::new(0, 0, 0),
+      done: false,
+      condition: condition,
+    }
+  }
 }
 
 impl<'a> Iterator for BlocksMatchingIterator<'a> {
@@ -102,21 +131,10 @@ impl<'a> Iterator for BlocksMatchingIterator<'a> {
 
   fn next(&mut self) -> Option<BlockView<'a>> {
     loop {
+      if self.done { return None; }
       let block = self.chunk.get_block(self.pos);
-
-      self.pos.x += 1;
-      if self.pos.x == CHUNK_WIDTH {
-        self.pos.x = 0;
-        self.pos.y += 1;
-        if self.pos.y == CHUNK_WIDTH {
-          self.pos.y = 0;
-          self.pos.z += 1;
-          if self.pos.z == CHUNK_WIDTH {
-            return None;
-          }
-        }
-      }
-
+      let incremented = self.pos.increment();
+      if !incremented { self.done = true; }
       if (self.condition)(block) { return Some(block); }
     }
   }
