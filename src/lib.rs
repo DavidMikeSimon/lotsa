@@ -12,20 +12,29 @@ impl std::convert::From<BlockType> for i32 {
 pub const UNKNOWN: BlockType = BlockType(0);
 pub const EMPTY: BlockType = BlockType(1);
 
-#[derive(Clone, Copy, Debug)]
-pub struct BlockView<'a> {
-  chunk: &'a Chunk,
-  block_type: BlockType,
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Point {
   x: u8,
   y: u8,
   z: u8,
 }
 
+impl Point {
+  pub fn new(x: u8, y: u8, z: u8) -> Self {
+    Point { x: x, y: y, z: z }
+  }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct BlockView<'a> {
+  chunk: &'a Chunk,
+  block_type: BlockType,
+  pos: Point,
+}
+
 impl<'a> BlockView<'a> {
   pub fn block_type(&self) -> BlockType { self.block_type }
-  pub fn x(&self) -> u8 { self.x }
-  pub fn y(&self) -> u8 { self.y }
-  pub fn z(&self) -> u8 { self.z }
+  pub fn pos(&self) -> Point { self.pos }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -40,26 +49,22 @@ impl Chunk {
     }
   }
 
-  pub fn get_block(&self, x: u8, y: u8, z: u8) -> BlockView {
+  pub fn get_block(&self, pos: Point) -> BlockView {
     BlockView {
       chunk: self,
-      block_type: self.block_types[x as usize][y as usize][z as usize],
-      x: x,
-      y: y,
-      z: z,
+      block_type: self.block_types[pos.x as usize][pos.y as usize][pos.z as usize],
+      pos: pos,
     }
   }
 
-  pub fn set_block_type(&mut self, x: u8, y: u8, z: u8, block_type: BlockType) {
-    self.block_types[x as usize][y as usize][z as usize] = block_type;
+  pub fn set_block_type(&mut self, pos: Point, block_type: BlockType) {
+    self.block_types[pos.x as usize][pos.y as usize][pos.z as usize] = block_type;
   }
 
   pub fn blocks_matching(&self, condition: BlockCondition) -> BlocksMatchingIterator {
     BlocksMatchingIterator {
       chunk: self,
-      x: 0,
-      y: 0,
-      z: 0,
+      pos: Point { x: 0, y: 0, z: 0 },
       condition: condition,
     }
   }
@@ -69,9 +74,7 @@ pub type BlockCondition = for<'a> fn(BlockView) -> bool;
 
 pub struct BlocksMatchingIterator<'a> {
   chunk: &'a Chunk,
-  x: u8,
-  y: u8,
-  z: u8,
+  pos: Point,
   condition: BlockCondition,
 }
 
@@ -80,16 +83,16 @@ impl<'a> Iterator for BlocksMatchingIterator<'a> {
 
   fn next(&mut self) -> Option<BlockView<'a>> {
     loop {
-      let block = self.chunk.get_block(self.x, self.y, self.z);
+      let block = self.chunk.get_block(self.pos);
 
-      self.x += 1;
-      if self.x == CHUNK_WIDTH {
-        self.x = 0;
-        self.y += 1;
-        if self.y == CHUNK_WIDTH {
-          self.y = 0;
-          self.z += 1;
-          if self.z == CHUNK_WIDTH {
+      self.pos.x += 1;
+      if self.pos.x == CHUNK_WIDTH {
+        self.pos.x = 0;
+        self.pos.y += 1;
+        if self.pos.y == CHUNK_WIDTH {
+          self.pos.y = 0;
+          self.pos.z += 1;
+          if self.pos.z == CHUNK_WIDTH {
             return None;
           }
         }
@@ -103,6 +106,7 @@ impl<'a> Iterator for BlocksMatchingIterator<'a> {
 
 #[cfg(test)]
 mod tests {
+  use Point;
   use BlockType;
   use BlockView;
   use Chunk;
@@ -113,34 +117,33 @@ mod tests {
   #[test]
   fn test_get_block() {
     let c = Chunk::new();
-    let block = c.get_block(1, 2, 3);
+    let block = c.get_block(Point::new(1, 2, 3));
     assert_eq!(block.block_type(), UNKNOWN);
-    assert_eq!(block.x(), 1);
-    assert_eq!(block.y(), 2);
-    assert_eq!(block.z(), 3);
+    assert_eq!(block.pos(), Point::new(1, 2, 3));
   }
 
   #[test]
   fn test_set_block_type() {
     let mut c = Chunk::new();
-    assert_eq!(c.get_block(0, 0, 0).block_type, UNKNOWN);
-    c.set_block_type(0, 0, 0, COBBLE);
-    assert_eq!(c.get_block(0, 0, 0).block_type, COBBLE);
+    let p = Point::new(0, 0, 0);
+    assert_eq!(c.get_block(p).block_type, UNKNOWN);
+    c.set_block_type(p, COBBLE);
+    assert_eq!(c.get_block(p).block_type, COBBLE);
   }
 
   #[test]
   fn test_get_matching_blocks() {
     let mut c = Chunk::new();
-    c.set_block_type(1, 1, 1, COBBLE);
-    c.set_block_type(2, 2, 2, COBBLE);
-    c.set_block_type(3, 3, 3, COBBLE);
+    c.set_block_type(Point::new(1, 1, 1), COBBLE);
+    c.set_block_type(Point::new(2, 2, 2), COBBLE);
+    c.set_block_type(Point::new(3, 3, 3), COBBLE);
 
     fn is_cobble(b: BlockView) -> bool { b.block_type == COBBLE };
 
     let mut iter = c.blocks_matching(is_cobble);
-    assert_eq!(iter.next().unwrap().x, 1);
-    assert_eq!(iter.next().unwrap().x, 2);
-    assert_eq!(iter.next().unwrap().x, 3);
+    assert_eq!(iter.next().unwrap().pos(), Point::new(1, 1, 1));
+    assert_eq!(iter.next().unwrap().pos(), Point::new(2, 2, 2));
+    assert_eq!(iter.next().unwrap().pos(), Point::new(3, 3, 3));
     assert!(iter.next().is_none());
   }
 }
