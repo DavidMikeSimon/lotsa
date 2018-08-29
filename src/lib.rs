@@ -1,5 +1,10 @@
 #![feature(test)]
 
+mod debugger;
+mod life;
+
+#[cfg(test)] #[macro_use] extern crate maplit;
+
 extern crate test;
 
 use std::ops::Index;
@@ -9,7 +14,7 @@ pub const CHUNK_WIDTH: u8 = 32;
 pub const CHUNK_WIDTH_E2: usize = (CHUNK_WIDTH as usize)*(CHUNK_WIDTH as usize);
 pub const CHUNK_WIDTH_E3: usize = (CHUNK_WIDTH as usize)*CHUNK_WIDTH_E2;
 
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct BlockType(pub u8);
 
 impl std::convert::From<BlockType> for i32 {
@@ -141,19 +146,6 @@ impl<'a> Iterator for BlocksMatchingIterator<'a> {
       if self.done { return None; }
       let block = self.chunk.get_block(self.pos);
 
-      // self.pos.x += 1;
-      // if self.pos.x == CHUNK_WIDTH {
-      //   self.pos.x = 0;
-      //   self.pos.y += 1;
-      //   if self.pos.y == CHUNK_WIDTH {
-      //     self.pos.y = 0;
-      //     self.pos.z += 1;
-      //     if self.pos.z == CHUNK_WIDTH {
-      //       return None;
-      //     }
-      //   }
-      // }
-
       let incremented = self.pos.increment();
       if !incremented { self.done = true; }
       if (self.condition)(block) { return Some(block); }
@@ -161,6 +153,7 @@ impl<'a> Iterator for BlocksMatchingIterator<'a> {
   }
 }
 
+impl<'a> std::iter::FusedIterator for BlocksMatchingIterator<'a> {}
 
 #[cfg(test)]
 mod tests {
@@ -231,5 +224,5 @@ mod tests {
       iter.next();
       iter.next();
     });
-  }
+  } 
 }
