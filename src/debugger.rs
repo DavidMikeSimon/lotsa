@@ -28,6 +28,26 @@ impl Debugger {
 
     r
   }
+
+  pub fn dump(&self, c: &Chunk) -> String {
+    let bounds = self.bounds(c);
+    if bounds.z() != 0 {
+      panic!("Cannot dump chunk unless all interesting blocks are on z layer 0")
+    }
+
+    let mut s = String::new();
+    let mut last_pos = Point::new(0, 0, 0);
+    // TODO: Unconditional blocks iterator
+    for block in c.blocks_matching(|b| b.pos.x() <= bounds.x() && b.pos.y() <= bounds.y() && b.pos.z() <= bounds.z()) {
+      if block.pos().y() > last_pos.y() {
+        s.push('\n');
+      }
+      let chr = self.block_type_chars.get(&block.block_type()).unwrap();
+      s.push(*chr);
+      last_pos = block.pos();
+    }
+    s
+  }
 }
 
 #[cfg(test)]
@@ -38,7 +58,6 @@ mod tests {
   use EMPTY;
   use Chunk;
   use Point;
-  use life::LIFE;
 
   const COBBLE: BlockType = BlockType(37);
 
@@ -46,9 +65,26 @@ mod tests {
   fn test_get_bounds() {
     let debugger = Debugger::new(hashmap!(UNKNOWN => 'X', EMPTY => '.', COBBLE => 'C'));
     let mut c = Chunk::new();
-    c.set_block_type(Point::new(1, 1, 1), LIFE);
-    c.set_block_type(Point::new(1, 4, 2), LIFE);
-    c.set_block_type(Point::new(1, 2, 3), LIFE);
+    c.set_block_type(Point::new(1, 1, 1), COBBLE);
+    c.set_block_type(Point::new(1, 4, 2), COBBLE);
+    c.set_block_type(Point::new(1, 2, 3), COBBLE);
     assert_eq!(debugger.bounds(&c), Point::new(1, 4, 3));
+  }
+
+  #[test]
+  fn test_dump_2d() {
+    let debugger = Debugger::new(hashmap!(UNKNOWN => 'X', EMPTY => '.', COBBLE => 'C'));
+    let mut c = Chunk::new();
+    c.set_block_type(Point::new(1, 1, 0), COBBLE);
+    c.set_block_type(Point::new(2, 3, 0), COBBLE);
+    c.set_block_type(Point::new(4, 2, 0), COBBLE);
+
+    assert_eq!(
+      debugger.dump(&c),
+      ".....\n\
+       .C...\n\
+       ....C\n\
+       ..C.."
+    )
   }
 }
