@@ -6,6 +6,14 @@ use BlockType;
 use Chunk;
 use Point;
 
+ #[macro_export]
+ macro_rules! assert_trimmed_eq {
+  ($a:expr, $b:expr) => {
+    assert_eq!($a.trim().replace(" ", ""), $b.trim().replace(" ", ""))
+  }
+}
+
+
 pub struct Debugger {
   block_type_chars: HashMap<BlockType, char>,
 }
@@ -82,12 +90,11 @@ mod tests {
     c.set_block_type(Point::new(2, 3, 0), COBBLE);
     c.set_block_type(Point::new(4, 2, 0), COBBLE);
 
-    assert_eq!(
-      debugger.dump(&c),
-      ".....\n\
-       .C...\n\
-       ....C\n\
-       ..C..\n"
-    )
+    assert_trimmed_eq!(debugger.dump(&c), "
+      .....
+      .C...
+      ....C
+      ..C..
+    ")
   }
 }
