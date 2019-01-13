@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use UNKNOWN;
 use EMPTY;
 use BlockType;
-use BlocksMatchingIterator;
 use Chunk;
 use Point;
 
@@ -19,7 +18,7 @@ impl Debugger {
   pub fn bounds(&self, c: &Chunk) -> Point {
     let mut r = Point::new(0, 0, 0);
 
-    for block in c.blocks_matching(|b| b.block_type() != EMPTY && b.block_type() != UNKNOWN) {
+    for block in c.blocks_iter().filter(|b| b.block_type() != EMPTY && b.block_type() != UNKNOWN) {
       let p = block.pos();
       if p.x() > r.x() { r = Point::new(p.x(), r.y(), r.z()) }
       if p.y() > r.y() { r = Point::new(r.x(), p.y(), r.z()) }
@@ -36,15 +35,13 @@ impl Debugger {
     }
 
     let mut s = String::new();
-    let mut last_pos = Point::new(0, 0, 0);
-    // TODO: Unconditional blocks iterator
-    for block in c.blocks_matching(|b| b.pos.x() <= bounds.x() && b.pos.y() <= bounds.y() && b.pos.z() <= bounds.z()) {
-      if block.pos().y() > last_pos.y() {
-        s.push('\n');
+    for y in 0..=bounds.y() {
+      for x in 0..=bounds.x() {
+        let block = c.get_block(Point::new(x, y, 0));
+        let chr = self.block_type_chars.get(&block.block_type()).unwrap();
+        s.push(*chr);
       }
-      let chr = self.block_type_chars.get(&block.block_type()).unwrap();
-      s.push(*chr);
-      last_pos = block.pos();
+      s.push('\n');
     }
     s
   }
@@ -75,6 +72,12 @@ mod tests {
   fn test_dump_2d() {
     let debugger = Debugger::new(hashmap!(UNKNOWN => 'X', EMPTY => '.', COBBLE => 'C'));
     let mut c = Chunk::new();
+    for x in 0..5 {
+      for y in 0..4 {
+        println!("EMPTY {} {}", x, y);
+        c.set_block_type(Point::new(x, y, 0), EMPTY);
+      }
+    }
     c.set_block_type(Point::new(1, 1, 0), COBBLE);
     c.set_block_type(Point::new(2, 3, 0), COBBLE);
     c.set_block_type(Point::new(4, 2, 0), COBBLE);
@@ -84,7 +87,7 @@ mod tests {
       ".....\n\
        .C...\n\
        ....C\n\
-       ..C.."
+       ..C..\n"
     )
   }
 }

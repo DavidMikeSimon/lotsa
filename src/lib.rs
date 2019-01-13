@@ -5,6 +5,7 @@ mod life;
 
 #[cfg(test)] #[macro_use] extern crate maplit;
 
+extern crate itertools;
 extern crate test;
 
 use std::ops::Index;
@@ -113,32 +114,28 @@ impl Chunk {
     self.block_types[pos] = block_type;
   }
 
-  pub fn blocks_matching(&self, condition: BlockCondition) -> BlocksMatchingIterator {
-    BlocksMatchingIterator::new(self, condition)
+  pub fn blocks_iter(&self) -> ChunkBlocksIterator {
+    ChunkBlocksIterator::new(self)
   }
 }
 
-pub type BlockCondition = for<'a> fn(BlockView) -> bool;
-
-pub struct BlocksMatchingIterator<'a> {
+pub struct ChunkBlocksIterator<'a> {
   chunk: &'a Chunk,
   pos: Point,
   done: bool,
-  condition: BlockCondition,
 }
 
-impl<'a> BlocksMatchingIterator<'a> {
-  fn new(chunk: &'a Chunk, condition: BlockCondition) -> BlocksMatchingIterator {
-    BlocksMatchingIterator {
+impl<'a> ChunkBlocksIterator<'a> {
+  fn new(chunk: &'a Chunk) -> ChunkBlocksIterator {
+    ChunkBlocksIterator {
       chunk: chunk,
       pos: Point::new(0, 0, 0),
       done: false,
-      condition: condition,
     }
   }
 }
 
-impl<'a> Iterator for BlocksMatchingIterator<'a> {
+impl<'a> Iterator for ChunkBlocksIterator<'a> {
   type Item = BlockView<'a>;
 
   fn next(&mut self) -> Option<BlockView<'a>> {
@@ -148,12 +145,12 @@ impl<'a> Iterator for BlocksMatchingIterator<'a> {
 
       let incremented = self.pos.increment();
       if !incremented { self.done = true; }
-      if (self.condition)(block) { return Some(block); }
+      return Some(block);
     }
   }
 }
 
-impl<'a> std::iter::FusedIterator for BlocksMatchingIterator<'a> {}
+impl<'a> std::iter::FusedIterator for ChunkBlocksIterator<'a> {}
 
 #[cfg(test)]
 mod tests {
@@ -173,6 +170,16 @@ mod tests {
     assert_eq!(p.x(), 1);
     assert_eq!(p.y(), 2);
     assert_eq!(p.z(), 3);
+
+    let p = Point::new(8, 9, 7);
+    assert_eq!(p.x(), 8);
+    assert_eq!(p.y(), 9);
+    assert_eq!(p.z(), 7);
+
+    let p = Point::new(15, 15, 15);
+    assert_eq!(p.x(), 15);
+    assert_eq!(p.y(), 15);
+    assert_eq!(p.z(), 15);
   }
 
   #[test]
@@ -193,15 +200,13 @@ mod tests {
   }
 
   #[test]
-  fn test_get_matching_blocks() {
+  fn test_get_blocks() {
     let mut c = Chunk::new();
     c.set_block_type(Point::new(1, 1, 1), COBBLE);
     c.set_block_type(Point::new(2, 2, 2), COBBLE);
     c.set_block_type(Point::new(3, 3, 3), COBBLE);
 
-    fn is_cobble(b: BlockView) -> bool { b.block_type == COBBLE };
-
-    let mut iter = c.blocks_matching(is_cobble);
+    let mut iter = c.blocks_iter().filter(|b| b.block_type == COBBLE);
     assert_eq!(iter.next().unwrap().pos(), Point::new(1, 1, 1));
     assert_eq!(iter.next().unwrap().pos(), Point::new(2, 2, 2));
     assert_eq!(iter.next().unwrap().pos(), Point::new(3, 3, 3));
@@ -209,16 +214,14 @@ mod tests {
   }
 
   #[bench]
-  fn bench_get_matching_blocks(b: &mut Bencher) {
+  fn bench_get_blocks(b: &mut Bencher) {
     let mut c = Chunk::new();
     c.set_block_type(Point::new(1, 1, 1), COBBLE);
     c.set_block_type(Point::new(2, 2, 2), COBBLE);
     c.set_block_type(Point::new(3, 3, 3), COBBLE);
 
-    fn is_cobble(b: BlockView) -> bool { b.block_type == COBBLE };
-
     b.iter(|| {
-      let mut iter = c.blocks_matching(is_cobble);
+      let mut iter = c.blocks_iter().filter(|b| b.block_type == COBBLE);
       iter.next();
       iter.next();
       iter.next();
