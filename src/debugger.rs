@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
-use UNKNOWN;
-use EMPTY;
-use BlockType;
-use Chunk;
-use Point;
+use block::UNKNOWN;
+use block::EMPTY;
+use block::BlockType;
+use chunk::Chunk;
+use point::Point;
 
  #[macro_export]
  macro_rules! assert_trimmed_eq {
@@ -12,7 +12,6 @@ use Point;
     assert_eq!($a.trim().replace(" ", ""), $b.trim().replace(" ", ""))
   }
 }
-
 
 pub struct Debugger {
   block_type_chars: HashMap<BlockType, char>,
@@ -59,10 +58,10 @@ impl Debugger {
 mod tests {
   use super::*;
 
-  use UNKNOWN;
-  use EMPTY;
-  use Chunk;
-  use Point;
+  use block::UNKNOWN;
+  use block::EMPTY;
+  use chunk::Chunk;
+  use point::Point;
 
   const COBBLE: BlockType = BlockType(37);
 

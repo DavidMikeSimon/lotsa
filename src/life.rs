@@ -1,4 +1,4 @@
-use BlockType;
+use block::BlockType;
 
 pub const LIFE: BlockType = BlockType(2);
 
