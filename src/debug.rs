@@ -6,13 +6,6 @@ use block::BlockType;
 use chunk::Chunk;
 use point::Point;
 
- #[macro_export]
- macro_rules! assert_trimmed_eq {
-  ($a:expr, $b:expr) => {
-    assert_eq!($a.trim().replace(" ", ""), $b.trim().replace(" ", ""))
-  }
-}
-
 pub struct Debugger {
   block_type_chars: HashMap<BlockType, char>,
   char_block_types: HashMap<char, BlockType>,
@@ -84,6 +77,16 @@ impl Debugger {
       }
     }
   }
+
+  pub fn clean(&self, s: &str) -> String {
+    let mut c = Chunk::new();
+    self.load(&mut c, s);
+    self.dump(&c)
+  }
+
+  pub fn assert_match(&self, c: &Chunk, s: &str) {
+    assert_eq!(self.dump(c), self.clean(s));
+  }
 }
 
 #[cfg(test)]
@@ -124,12 +127,13 @@ mod tests {
     c.set_block_type(Point::new(2, 3, 0), COBBLE);
     c.set_block_type(Point::new(4, 2, 0), COBBLE);
 
-    assert_trimmed_eq!(debugger.dump(&c), "
+
+    debugger.assert_match(&c, "
       .....
       .C...
       ....C
       ..C..
-    ")
+    ");
   }
 
   #[test]
@@ -153,11 +157,26 @@ mod tests {
     assert_eq!(c.get_block(Point::new(2, 2, 0)).block_type(), COBBLE);
     assert_eq!(c.get_block(Point::new(0, 3, 0)).block_type(), COBBLE);
 
-    assert_trimmed_eq!(debugger.dump(&c), "
+    debugger.assert_match(&c, "
       .....
       .CC.C
       ..CC.
       C....
     ");
+  }
+
+  #[test]
+  fn test_clean() {
+    let debugger = build_debugger();
+
+    assert_eq!(
+      "...\nC..\n..C\n",
+      debugger.clean("
+        .....
+        C....
+        ..C..
+        .....
+      ")
+    )
   }
 }

@@ -25,7 +25,7 @@ mod tests {
     let mut sim = Simulator::new(&mut chunk);
 
     sim.step();
-    assert_trimmed_eq!(debugger.dump(sim.get_chunk()), "
+    debugger.assert_match(sim.get_chunk(), "
       .....
       ..L..
       ..L..
@@ -34,7 +34,7 @@ mod tests {
     ");
 
     sim.step();
-    assert_trimmed_eq!(debugger.dump(sim.get_chunk()), "
+    debugger.assert_match(sim.get_chunk(), "
       .....
       .....
       .LLL.
