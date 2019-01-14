@@ -15,11 +15,23 @@ use point::Point;
 
 pub struct Debugger {
   block_type_chars: HashMap<BlockType, char>,
+  char_block_types: HashMap<char, BlockType>,
 }
 
 impl Debugger {
   pub fn new(block_type_chars: HashMap<BlockType, char>) -> Debugger {
-    Debugger { block_type_chars: block_type_chars }
+    let mut char_block_types: HashMap<char, BlockType> = HashMap::new();
+    for (&bt, &c) in block_type_chars.iter() {
+      if char_block_types.contains_key(&c) {
+        panic!("Ambiguous mapping for Debugger character {}", c);
+      }
+      char_block_types.insert(c, bt);
+    }
+
+    Debugger {
+      block_type_chars: block_type_chars,
+      char_block_types: char_block_types,
+    }
   }
 
   pub fn bounds(&self, c: &Chunk) -> Point {
@@ -52,6 +64,27 @@ impl Debugger {
     }
     s
   }
+
+  pub fn load(&self, c: &mut Chunk, s: &str) {
+    let mut x = 0;
+    let mut y = 0;
+
+    for chr in s.trim().chars() {
+      match chr {
+        ' ' => (), // Ignore spaces
+        '\n' => {
+          x = 0;
+          y += 1;
+        },
+        _ => {
+          let &bt = self.char_block_types.get(&chr).unwrap();
+          println!("SETTING X {} Y {} BT {:?}", x, y, bt);
+          c.set_block_type(Point::new(x, y, 0), bt);
+          x += 1;
+        },
+      }
+    }
+  }
 }
 
 #[cfg(test)]
@@ -65,9 +98,13 @@ mod tests {
 
   const COBBLE: BlockType = BlockType(37);
 
+  fn build_debugger() -> Debugger {
+    Debugger::new(hashmap!(UNKNOWN => 'X', EMPTY => '.', COBBLE => 'C'))
+  }
+
   #[test]
   fn test_get_bounds() {
-    let debugger = Debugger::new(hashmap!(UNKNOWN => 'X', EMPTY => '.', COBBLE => 'C'));
+    let debugger = build_debugger();
     let mut c = Chunk::new();
     c.set_block_type(Point::new(1, 1, 1), COBBLE);
     c.set_block_type(Point::new(1, 4, 2), COBBLE);
@@ -77,11 +114,10 @@ mod tests {
 
   #[test]
   fn test_dump_2d() {
-    let debugger = Debugger::new(hashmap!(UNKNOWN => 'X', EMPTY => '.', COBBLE => 'C'));
+    let debugger = build_debugger();
     let mut c = Chunk::new();
-    for x in 0..5 {
-      for y in 0..4 {
-        println!("EMPTY {} {}", x, y);
+    for x in 0..6 {
+      for y in 0..6 {
         c.set_block_type(Point::new(x, y, 0), EMPTY);
       }
     }
@@ -95,5 +131,34 @@ mod tests {
       ....C
       ..C..
     ")
+  }
+
+  #[test]
+  fn test_load_2d() {
+    let debugger = build_debugger();
+    let mut c = Chunk::new();
+
+    debugger.load(&mut c, "
+      .....
+      .CC.C
+      ..CC.
+      C....
+    ");
+
+    assert_eq!(c.get_block(Point::new(0, 0, 0)).block_type(), EMPTY);
+    assert_eq!(c.get_block(Point::new(0, 0, 1)).block_type(), UNKNOWN);
+    assert_eq!(c.get_block(Point::new(15, 0, 0)).block_type(), UNKNOWN);
+    assert_eq!(c.get_block(Point::new(1, 1, 0)).block_type(), COBBLE);
+    assert_eq!(c.get_block(Point::new(2, 1, 0)).block_type(), COBBLE);
+    assert_eq!(c.get_block(Point::new(1, 2, 0)).block_type(), EMPTY);
+    assert_eq!(c.get_block(Point::new(2, 2, 0)).block_type(), COBBLE);
+    assert_eq!(c.get_block(Point::new(0, 3, 0)).block_type(), COBBLE);
+
+    assert_trimmed_eq!(debugger.dump(&c), "
+      .....
+      .CC.C
+      ..CC.
+      C....
+    ");
   }
 }
