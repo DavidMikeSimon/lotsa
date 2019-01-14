@@ -78,7 +78,6 @@ impl Debugger {
         },
         _ => {
           let &bt = self.char_block_types.get(&chr).unwrap();
-          println!("SETTING X {} Y {} BT {:?}", x, y, bt);
           c.set_block_type(Point::new(x, y, 0), bt);
           x += 1;
         },

@@ -4,8 +4,11 @@
 
 extern crate test;
 
+#[macro_use]
+mod debug;
+
 mod block;
 mod chunk;
-mod debugger;
 mod point;
 mod life;
+mod sim;
