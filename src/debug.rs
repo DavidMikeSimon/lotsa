@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
-use crate::block::UNKNOWN;
-use crate::block::EMPTY;
-use crate::block::BlockType;
-use crate::chunk::Chunk;
-use crate::point::Point;
+use crate::{
+  block::{BlockType, EMPTY, UNKNOWN},
+  chunk::Chunk,
+  point::Point,
+};
 
 pub struct Debugger {
   block_type_chars: HashMap<BlockType, char>,
@@ -22,19 +22,28 @@ impl Debugger {
     }
 
     Debugger {
-      block_type_chars: block_type_chars,
-      char_block_types: char_block_types,
+      block_type_chars,
+      char_block_types,
     }
   }
 
   pub fn bounds(&self, c: &Chunk) -> Point {
     let mut r = Point::new(0, 0, 0);
 
-    for block in c.blocks_iter().filter(|b| b.block_type() != EMPTY && b.block_type() != UNKNOWN) {
+    for block in c
+      .blocks_iter()
+      .filter(|b| b.block_type() != EMPTY && b.block_type() != UNKNOWN)
+    {
       let p = block.pos();
-      if p.x() > r.x() { r = Point::new(p.x(), r.y(), r.z()) }
-      if p.y() > r.y() { r = Point::new(r.x(), p.y(), r.z()) }
-      if p.z() > r.z() { r = Point::new(r.x(), r.y(), p.z()) }
+      if p.x() > r.x() {
+        r = Point::new(p.x(), r.y(), r.z())
+      }
+      if p.y() > r.y() {
+        r = Point::new(r.x(), p.y(), r.z())
+      }
+      if p.z() > r.z() {
+        r = Point::new(r.x(), r.y(), p.z())
+      }
     }
 
     r
@@ -93,10 +102,11 @@ impl Debugger {
 mod tests {
   use super::*;
 
-  use crate::block::UNKNOWN;
-  use crate::block::EMPTY;
-  use crate::chunk::Chunk;
-  use crate::point::Point;
+  use crate::{
+    block::{EMPTY, UNKNOWN},
+    chunk::Chunk,
+    point::Point,
+  };
 
   const COBBLE: BlockType = BlockType(37);
 
@@ -127,13 +137,13 @@ mod tests {
     c.set_block_type(Point::new(2, 3, 0), COBBLE);
     c.set_block_type(Point::new(4, 2, 0), COBBLE);
 
-
-    debugger.assert_match(&c, "
-      .....
-      .C...
-      ....C
-      ..C..
-    ");
+    debugger.assert_match(
+      &c,
+      ".....
+       .C...
+       ....C
+       ..C..",
+    );
   }
 
   #[test]
@@ -141,12 +151,13 @@ mod tests {
     let debugger = build_debugger();
     let mut c = Chunk::new();
 
-    debugger.load(&mut c, "
-      .....
-      .CC.C
-      ..CC.
-      C....
-    ");
+    debugger.load(
+      &mut c,
+      ".....
+       .CC.C
+       ..CC.
+       C....",
+    );
 
     assert_eq!(c.get_block(Point::new(0, 0, 0)).block_type(), EMPTY);
     assert_eq!(c.get_block(Point::new(0, 0, 1)).block_type(), UNKNOWN);
@@ -157,12 +168,13 @@ mod tests {
     assert_eq!(c.get_block(Point::new(2, 2, 0)).block_type(), COBBLE);
     assert_eq!(c.get_block(Point::new(0, 3, 0)).block_type(), COBBLE);
 
-    debugger.assert_match(&c, "
-      .....
-      .CC.C
-      ..CC.
-      C....
-    ");
+    debugger.assert_match(
+      &c,
+      ".....
+       .CC.C
+       ..CC.
+       C....",
+    );
   }
 
   #[test]
@@ -171,12 +183,12 @@ mod tests {
 
     assert_eq!(
       "...\nC..\n..C\n",
-      debugger.clean("
-        .....
-        C....
-        ..C..
-        .....
-      ")
+      debugger.clean(
+        ".....
+         C....
+         ..C..
+         ....."
+      )
     )
   }
 }

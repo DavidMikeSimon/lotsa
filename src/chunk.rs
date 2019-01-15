@@ -1,23 +1,23 @@
-use std::iter::FusedIterator;
-use std::ops::Index;
-use std::ops::IndexMut;
+use std::{
+  iter::FusedIterator,
+  ops::{Index, IndexMut},
+};
 
-use crate::point::Point;
-use crate::block::BlockType;
-use crate::block::UNKNOWN;
+use crate::{
+  block::{BlockType, UNKNOWN},
+  point::Point,
+};
 
 pub const CHUNK_WIDTH: u8 = 32;
-pub const CHUNK_WIDTH_E2: usize = (CHUNK_WIDTH as usize)*(CHUNK_WIDTH as usize);
-pub const CHUNK_WIDTH_E3: usize = (CHUNK_WIDTH as usize)*CHUNK_WIDTH_E2;
+pub const CHUNK_WIDTH_E2: usize = (CHUNK_WIDTH as usize) * (CHUNK_WIDTH as usize);
+pub const CHUNK_WIDTH_E3: usize = (CHUNK_WIDTH as usize) * CHUNK_WIDTH_E2;
 
 type BlockTypesArray = [BlockType; CHUNK_WIDTH_E3 as usize];
 
 impl Index<Point> for BlockTypesArray {
   type Output = BlockType;
 
-  fn index(&self, pos: Point) -> &BlockType {
-    self.get(pos.raw_n() as usize).unwrap()
-  }
+  fn index(&self, pos: Point) -> &BlockType { self.get(pos.raw_n() as usize).unwrap() }
 }
 
 impl IndexMut<Point> for BlockTypesArray {
@@ -42,7 +42,7 @@ impl Chunk {
     BlockView {
       chunk: self,
       block_type: self.block_types[pos],
-      pos: pos,
+      pos,
     }
   }
 
@@ -50,9 +50,7 @@ impl Chunk {
     self.block_types[pos] = block_type;
   }
 
-  pub fn blocks_iter(&self) -> ChunkBlocksIterator<'_> {
-    ChunkBlocksIterator::new(self)
-  }
+  pub fn blocks_iter(&self) -> ChunkBlocksIterator<'_> { ChunkBlocksIterator::new(self) }
 }
 
 pub struct ChunkBlocksIterator<'a> {
@@ -64,7 +62,7 @@ pub struct ChunkBlocksIterator<'a> {
 impl<'a> ChunkBlocksIterator<'a> {
   fn new(chunk: &'a Chunk) -> ChunkBlocksIterator<'_> {
     ChunkBlocksIterator {
-      chunk: chunk,
+      chunk,
       pos: Point::new(0, 0, 0),
       done: false,
     }
@@ -76,11 +74,15 @@ impl<'a> Iterator for ChunkBlocksIterator<'a> {
 
   fn next(&mut self) -> Option<BlockView<'a>> {
     loop {
-      if self.done { return None; }
+      if self.done {
+        return None;
+      }
       let block = self.chunk.get_block(self.pos);
 
       let incremented = self.pos.increment();
-      if !incremented { self.done = true; }
+      if !incremented {
+        self.done = true;
+      }
       return Some(block);
     }
   }
@@ -140,7 +142,7 @@ mod tests {
       iter.next();
       iter.next();
     });
-  } 
+  }
 }
 
 #[derive(Clone, Copy)]
@@ -153,5 +155,6 @@ pub struct BlockView<'a> {
 
 impl<'a> BlockView<'a> {
   pub fn block_type(&self) -> BlockType { self.block_type }
+
   pub fn pos(&self) -> Point { self.pos }
 }
