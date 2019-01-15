@@ -145,6 +145,7 @@ mod tests {
 
 #[derive(Clone, Copy)]
 pub struct BlockView<'a> {
+  #[allow(dead_code)] // FIXME
   chunk: &'a Chunk,
   pub block_type: BlockType,
   pub pos: Point,

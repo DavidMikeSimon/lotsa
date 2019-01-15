@@ -1,13 +1,15 @@
-use block::{BlockType, UNKNOWN, EMPTY};
-use chunk::Chunk;
-use sim::Simulator;
-use debug::Debugger;
+use block::BlockType;
 
 pub const LIFE: BlockType = BlockType(2);
 
 #[cfg(test)]
 mod tests {
   use super::*;
+  use block::{UNKNOWN, EMPTY};
+
+  use chunk::Chunk;
+  use sim::Simulator;
+  use debug::Debugger;
 
   #[test]
   fn test_blinker() {
