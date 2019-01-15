@@ -2,9 +2,9 @@ use std::iter::FusedIterator;
 use std::ops::Index;
 use std::ops::IndexMut;
 
-use point::Point;
-use block::BlockType;
-use block::UNKNOWN;
+use crate::point::Point;
+use crate::block::BlockType;
+use crate::block::UNKNOWN;
 
 pub const CHUNK_WIDTH: u8 = 32;
 pub const CHUNK_WIDTH_E2: usize = (CHUNK_WIDTH as usize)*(CHUNK_WIDTH as usize);
@@ -38,7 +38,7 @@ impl Chunk {
     }
   }
 
-  pub fn get_block(&self, pos: Point) -> BlockView {
+  pub fn get_block(&self, pos: Point) -> BlockView<'_> {
     BlockView {
       chunk: self,
       block_type: self.block_types[pos],
@@ -50,7 +50,7 @@ impl Chunk {
     self.block_types[pos] = block_type;
   }
 
-  pub fn blocks_iter(&self) -> ChunkBlocksIterator {
+  pub fn blocks_iter(&self) -> ChunkBlocksIterator<'_> {
     ChunkBlocksIterator::new(self)
   }
 }
@@ -62,7 +62,7 @@ pub struct ChunkBlocksIterator<'a> {
 }
 
 impl<'a> ChunkBlocksIterator<'a> {
-  fn new(chunk: &'a Chunk) -> ChunkBlocksIterator {
+  fn new(chunk: &'a Chunk) -> ChunkBlocksIterator<'_> {
     ChunkBlocksIterator {
       chunk: chunk,
       pos: Point::new(0, 0, 0),

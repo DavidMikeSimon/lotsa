@@ -1,6 +1,6 @@
-use chunk::CHUNK_WIDTH;
-use chunk::CHUNK_WIDTH_E2;
-use chunk::CHUNK_WIDTH_E3;
+use crate::chunk::CHUNK_WIDTH;
+use crate::chunk::CHUNK_WIDTH_E2;
+use crate::chunk::CHUNK_WIDTH_E3;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Point {

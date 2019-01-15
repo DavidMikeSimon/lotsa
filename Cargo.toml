@@ -2,6 +2,7 @@
 name = "lotsa_rust"
 version = "0.1.0"
 authors = ["David Simon <david.mike.simon@gmail.com>"]
+edition = "2018"
 
 [dependencies]
 maplit = "1.0.1"

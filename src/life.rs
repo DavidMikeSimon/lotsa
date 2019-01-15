@@ -1,15 +1,15 @@
-use block::BlockType;
+use crate::block::BlockType;
 
 pub const LIFE: BlockType = BlockType(2);
 
 #[cfg(test)]
 mod tests {
   use super::*;
-  use block::{UNKNOWN, EMPTY};
+  use crate::block::{UNKNOWN, EMPTY};
 
-  use chunk::Chunk;
-  use sim::Simulator;
-  use debug::Debugger;
+  use crate::chunk::Chunk;
+  use crate::sim::Simulator;
+  use crate::debug::Debugger;
 
   #[test]
   fn test_blinker() {

@@ -1,8 +1,7 @@
 #![feature(test)]
 
 #[cfg(test)] #[macro_use] extern crate maplit;
-
-extern crate test;
+#[cfg(test)] extern crate test;
 
 pub mod block;
 pub mod chunk;

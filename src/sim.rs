@@ -1,4 +1,4 @@
-use chunk::Chunk;
+use crate::chunk::Chunk;
 
 pub struct Simulator {
   chunk: Chunk,

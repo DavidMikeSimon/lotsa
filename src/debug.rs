@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
-use block::UNKNOWN;
-use block::EMPTY;
-use block::BlockType;
-use chunk::Chunk;
-use point::Point;
+use crate::block::UNKNOWN;
+use crate::block::EMPTY;
+use crate::block::BlockType;
+use crate::chunk::Chunk;
+use crate::point::Point;
 
 pub struct Debugger {
   block_type_chars: HashMap<BlockType, char>,
@@ -93,10 +93,10 @@ impl Debugger {
 mod tests {
   use super::*;
 
-  use block::UNKNOWN;
-  use block::EMPTY;
-  use chunk::Chunk;
-  use point::Point;
+  use crate::block::UNKNOWN;
+  use crate::block::EMPTY;
+  use crate::chunk::Chunk;
+  use crate::point::Point;
 
   const COBBLE: BlockType = BlockType(37);
 
