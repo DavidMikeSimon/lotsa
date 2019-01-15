@@ -4,7 +4,7 @@ use std::convert::From;
 pub struct BlockType(pub u8);
 
 impl From<BlockType> for i32 {
-  fn from(bt: BlockType) -> Self { bt.0 as i32 }
+  fn from(bt: BlockType) -> Self { i32::from(bt.0) }
 }
 
 pub const UNKNOWN: BlockType = BlockType(0);

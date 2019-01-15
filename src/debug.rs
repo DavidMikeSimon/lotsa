@@ -59,8 +59,8 @@ impl Debugger {
     for y in 0..=bounds.y() {
       for x in 0..=bounds.x() {
         let block = c.get_block(Point::new(x, y, 0));
-        let chr = self.block_type_chars.get(&block.block_type()).unwrap();
-        s.push(*chr);
+        let chr = self.block_type_chars[&block.block_type()];
+        s.push(chr);
       }
       s.push('\n');
     }
@@ -79,7 +79,7 @@ impl Debugger {
           y += 1;
         },
         _ => {
-          let &bt = self.char_block_types.get(&chr).unwrap();
+          let bt = self.char_block_types[&chr];
           c.set_block_type(Point::new(x, y, 0), bt);
           x += 1;
         },

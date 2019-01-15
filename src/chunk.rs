@@ -53,6 +53,12 @@ impl Chunk {
   pub fn blocks_iter(&self) -> ChunkBlocksIterator<'_> { ChunkBlocksIterator::new(self) }
 }
 
+impl Default for Chunk {
+  fn default() -> Self {
+    Self::new()
+  }
+}
+
 pub struct ChunkBlocksIterator<'a> {
   chunk: &'a Chunk,
   pos: Point,
@@ -73,18 +79,16 @@ impl<'a> Iterator for ChunkBlocksIterator<'a> {
   type Item = BlockView<'a>;
 
   fn next(&mut self) -> Option<BlockView<'a>> {
-    loop {
-      if self.done {
-        return None;
-      }
-      let block = self.chunk.get_block(self.pos);
-
-      let incremented = self.pos.increment();
-      if !incremented {
-        self.done = true;
-      }
-      return Some(block);
+    if self.done {
+      return None;
     }
+
+    let block = self.chunk.get_block(self.pos);
+    let incremented = self.pos.increment();
+    if !incremented {
+      self.done = true;
+    }
+    Some(block)
   }
 }
 

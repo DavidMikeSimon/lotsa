@@ -2,6 +2,7 @@
 
 #![warn(unused)]
 #![warn(future_incompatible)]
+#![warn(clippy::all)]
 
 #[cfg(test)]
 #[macro_use]
