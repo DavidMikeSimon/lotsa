@@ -1,5 +1,8 @@
 #![feature(test)]
 
+#![warn(unused)]
+#![warn(future_incompatible)]
+
 #[cfg(test)]
 #[macro_use]
 extern crate maplit;
