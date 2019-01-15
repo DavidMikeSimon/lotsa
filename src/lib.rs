@@ -4,9 +4,9 @@
 
 extern crate test;
 
-mod block;
-mod chunk;
-mod debug;
-mod point;
-mod life;
-mod sim;
+pub mod block;
+pub mod chunk;
+pub mod debug;
+pub mod point;
+pub mod life;
+pub mod sim;
