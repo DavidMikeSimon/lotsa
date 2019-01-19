@@ -51,12 +51,32 @@ impl Chunk {
   }
 
   pub fn blocks_iter(&self) -> ChunkBlocksIterator<'_> { ChunkBlocksIterator::new(self) }
+
+  pub fn neighbor_types(&self, pos: Point) -> Vec<BlockType> {
+    let mut r = Vec::new();
+
+    for &y_offset in [-1, 0, 1].iter() {
+      let tgt_y = pos.y() as isize + y_offset;
+      if tgt_y >= 0 && tgt_y <= 15 {
+        for &x_offset in [-1, 0, 1].iter() {
+          if x_offset == 0 && y_offset == 0 {
+            continue;
+          }
+          let tgt_x = pos.x() as isize + x_offset;
+          if tgt_x >= 0 && tgt_x <= 15 {
+            let neighbor_pos = Point::new(tgt_x as u8, tgt_y as u8, pos.z());
+            r.push(self.get_block(neighbor_pos).block_type);
+          }
+        }
+      }
+    }
+
+    r
+  }
 }
 
 impl Default for Chunk {
-  fn default() -> Self {
-    Self::new()
-  }
+  fn default() -> Self { Self::new() }
 }
 
 pub struct ChunkBlocksIterator<'a> {
@@ -120,24 +140,51 @@ mod tests {
 
   #[test]
   fn test_get_blocks() {
-    let mut c = Chunk::new();
-    c.set_block_type(Point::new(1, 1, 1), COBBLE);
-    c.set_block_type(Point::new(2, 2, 2), COBBLE);
-    c.set_block_type(Point::new(3, 3, 3), COBBLE);
+    let c = three_cobble_chunk();
 
     let mut iter = c.blocks_iter().filter(|b| b.block_type == COBBLE);
-    assert_eq!(iter.next().unwrap().pos(), Point::new(1, 1, 1));
-    assert_eq!(iter.next().unwrap().pos(), Point::new(2, 2, 2));
-    assert_eq!(iter.next().unwrap().pos(), Point::new(3, 3, 3));
+    assert_eq!(iter.next().unwrap().pos(), Point::new(1, 1, 0));
+    assert_eq!(iter.next().unwrap().pos(), Point::new(2, 2, 0));
+    assert_eq!(iter.next().unwrap().pos(), Point::new(3, 3, 0));
     assert!(iter.next().is_none());
+  }
+
+  #[test]
+  fn test_neighbor_types() {
+    let c = three_cobble_chunk();
+
+    assert_eq!(
+      c.neighbor_types(Point::new(2, 2, 0)),
+      vec![COBBLE, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, COBBLE]
+    );
+
+    assert_eq!(
+      c.neighbor_types(Point::new(9, 9, 0)),
+      vec![UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN]
+    );
+
+    // Top left corner
+    assert_eq!(
+      c.neighbor_types(Point::new(0, 0, 0)),
+      vec![UNKNOWN, UNKNOWN, COBBLE]
+    );
+
+    // Top side
+    assert_eq!(
+      c.neighbor_types(Point::new(1, 0, 0)),
+      vec![UNKNOWN, UNKNOWN, UNKNOWN, COBBLE, UNKNOWN]
+    );
+
+    // Left side
+    assert_eq!(
+      c.neighbor_types(Point::new(0, 1, 0)),
+      vec![UNKNOWN, UNKNOWN, COBBLE, UNKNOWN, UNKNOWN]
+    );
   }
 
   #[bench]
   fn bench_get_blocks(b: &mut Bencher) {
-    let mut c = Chunk::new();
-    c.set_block_type(Point::new(1, 1, 1), COBBLE);
-    c.set_block_type(Point::new(2, 2, 2), COBBLE);
-    c.set_block_type(Point::new(3, 3, 3), COBBLE);
+    let c = three_cobble_chunk();
 
     b.iter(|| {
       let mut iter = c.blocks_iter().filter(|b| b.block_type == COBBLE);
@@ -146,6 +193,14 @@ mod tests {
       iter.next();
       iter.next();
     });
+  }
+
+  fn three_cobble_chunk() -> Chunk {
+    let mut c = Chunk::new();
+    c.set_block_type(Point::new(1, 1, 0), COBBLE);
+    c.set_block_type(Point::new(2, 2, 0), COBBLE);
+    c.set_block_type(Point::new(3, 3, 0), COBBLE);
+    c
   }
 }
 

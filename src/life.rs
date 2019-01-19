@@ -1,13 +1,40 @@
-use crate::block::BlockType;
+use crate::{
+  block::{BlockType, EMPTY},
+  sim::Simulator,
+};
 
 pub const LIFE: BlockType = BlockType(2);
+
+fn live_neighbors(neighbors: &[BlockType]) -> usize {
+  neighbors.iter().filter(|&&b| b == LIFE).count()
+}
+
+fn update_life_block_type(_this: BlockType, neighbors: &[BlockType]) -> BlockType {
+  let nearby = live_neighbors(neighbors);
+  if nearby >= 2 && nearby <= 4 {
+    LIFE
+  } else {
+    EMPTY
+  }
+}
+
+fn update_empty_block_type(_this: BlockType, neighbors: &[BlockType]) -> BlockType {
+  if live_neighbors(neighbors) == 3 {
+    LIFE
+  } else {
+    EMPTY
+  }
+}
+
+pub fn init(sim: &mut Simulator) {
+  sim.add_updater(LIFE, update_life_block_type);
+  sim.add_updater(EMPTY, update_empty_block_type);
+}
 
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::block::{EMPTY, UNKNOWN};
-
-  use crate::{chunk::Chunk, debug::Debugger, sim::Simulator};
+  use crate::{block::UNKNOWN, chunk::Chunk, debug::Debugger};
 
   #[test]
   fn test_blinker() {
@@ -24,8 +51,11 @@ mod tests {
     );
 
     let mut sim = Simulator::new(&mut chunk);
+    init(&mut sim);
 
+    print!("{:?}", debugger.dump(sim.get_chunk()));
     sim.step();
+    print!("{:?}", debugger.dump(sim.get_chunk()));
     debugger.assert_match(
       sim.get_chunk(),
       ".....
