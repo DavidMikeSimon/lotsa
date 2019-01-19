@@ -34,8 +34,8 @@ pub fn init(sim: &mut Simulator) {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use test::Bencher;
   use crate::{block::UNKNOWN, chunk::Chunk, debug::Debugger};
+  use test::Bencher;
 
   #[test]
   fn test_blinker() {
@@ -96,7 +96,9 @@ mod tests {
       let mut sim = Simulator::new(&mut chunk);
       init(&mut sim);
 
-      for _x in 1..10 { sim.step(); }
+      for _x in 1..10 {
+        sim.step();
+      }
     });
   }
 }

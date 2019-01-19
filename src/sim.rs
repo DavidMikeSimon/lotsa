@@ -39,7 +39,9 @@ impl Simulator {
     for block in self.chunk.blocks_iter() {
       if let Some(updaters) = self.updaters.get(&block.block_type) {
         for updater in updaters {
-          if let Some(new_block_type) = updater(block.block_type, &self.chunk.neighbor_types(block.pos)) {
+          if let Some(new_block_type) =
+            updater(block.block_type, &self.chunk.neighbor_types(block.pos))
+          {
             updates.push(BlockTypeUpdate {
               pos: block.pos,
               block_type: new_block_type,
