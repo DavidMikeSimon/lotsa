@@ -3,26 +3,26 @@ use crate::{
   sim::Simulator,
 };
 
-pub const LIFE: BlockType = BlockType(2);
+pub const LIFE: BlockType = BlockType(3);
 
 fn live_neighbors(neighbors: &[BlockType]) -> usize {
   neighbors.iter().filter(|&&b| b == LIFE).count()
 }
 
-fn update_life_block_type(_this: BlockType, neighbors: &[BlockType]) -> BlockType {
+fn update_life_block_type(_this: BlockType, neighbors: &[BlockType]) -> Option<BlockType> {
   let nearby = live_neighbors(neighbors);
   if nearby >= 2 && nearby <= 4 {
-    LIFE
+    None
   } else {
-    EMPTY
+    Some(EMPTY)
   }
 }
 
-fn update_empty_block_type(_this: BlockType, neighbors: &[BlockType]) -> BlockType {
+fn update_empty_block_type(_this: BlockType, neighbors: &[BlockType]) -> Option<BlockType> {
   if live_neighbors(neighbors) == 3 {
-    LIFE
+    Some(LIFE)
   } else {
-    EMPTY
+    None
   }
 }
 
@@ -34,6 +34,7 @@ pub fn init(sim: &mut Simulator) {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use test::Bencher;
   use crate::{block::UNKNOWN, chunk::Chunk, debug::Debugger};
 
   #[test]
@@ -74,5 +75,28 @@ mod tests {
        .....
        .....",
     );
+  }
+
+  #[bench]
+  fn bench_blinker(b: &mut Bencher) {
+    let mut base_chunk = Chunk::new();
+    let debugger = Debugger::new(hashmap!(UNKNOWN => 'X', EMPTY => '.', LIFE => 'L'));
+
+    debugger.load(
+      &mut base_chunk,
+      ".....
+       .....
+       .LLL.
+       .....
+       .....",
+    );
+
+    b.iter(|| {
+      let mut chunk = base_chunk;
+      let mut sim = Simulator::new(&mut chunk);
+      init(&mut sim);
+
+      for _x in 1..10 { sim.step(); }
+    });
   }
 }

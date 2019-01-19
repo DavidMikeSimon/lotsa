@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{block::BlockType, chunk::Chunk, point::Point};
 
-type UpdaterFn = fn(BlockType, &[BlockType]) -> BlockType;
+type UpdaterFn = fn(BlockType, &[BlockType]) -> Option<BlockType>;
 
 pub struct Simulator {
   chunk: Chunk,
@@ -29,7 +29,7 @@ impl Simulator {
     self
       .updaters
       .entry(target)
-      .or_insert(Vec::new())
+      .or_insert_with(Vec::new)
       .push(updater);
   }
 
@@ -39,17 +39,18 @@ impl Simulator {
     for block in self.chunk.blocks_iter() {
       if let Some(updaters) = self.updaters.get(&block.block_type) {
         for updater in updaters {
-          let new_block_type = updater(block.block_type, &self.chunk.neighbor_types(block.pos));
-          updates.push(BlockTypeUpdate {
-            pos: block.pos,
-            block_type: new_block_type,
-          });
+          if let Some(new_block_type) = updater(block.block_type, &self.chunk.neighbor_types(block.pos)) {
+            updates.push(BlockTypeUpdate {
+              pos: block.pos,
+              block_type: new_block_type,
+            });
+          }
         }
       }
     }
 
     for update in updates {
-      &self.chunk.set_block_type(update.pos, update.block_type);
+      self.chunk.set_block_type(update.pos, update.block_type);
     }
   }
 }
