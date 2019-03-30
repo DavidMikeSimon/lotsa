@@ -17,12 +17,14 @@ type BlockTypesArray = [BlockType; CHUNK_WIDTH_E3 as usize];
 impl Index<Point> for BlockTypesArray {
   type Output = BlockType;
 
-  fn index(&self, pos: Point) -> &BlockType { self.get(pos.raw_n() as usize).unwrap() }
+  fn index(&self, pos: Point) -> &BlockType {
+    self.get(pos.raw_n() as usize).expect("Point always has valid index")
+  }
 }
 
 impl IndexMut<Point> for BlockTypesArray {
   fn index_mut(&mut self, pos: Point) -> &mut BlockType {
-    self.get_mut(pos.raw_n() as usize).unwrap()
+    self.get_mut(pos.raw_n() as usize).expect("Point always has valid index")
   }
 }
 
