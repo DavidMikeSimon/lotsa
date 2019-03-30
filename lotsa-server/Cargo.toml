@@ -12,6 +12,7 @@ readme = "README.md"
 
 [dependencies]
 lotsa = { path = "../lotsa" }
+actix = "0.7"
 actix-web = "0.7"
 maplit = "1.0.1"
 

@@ -1,15 +1,6 @@
-#[macro_use]
-extern crate maplit;
-
 use wasm_bindgen::prelude::*;
-
-use lotsa::{
-  block::{BlockType, EMPTY, UNKNOWN},
-  chunk::Chunk,
-  debug::Debugger,
-};
-
-pub const STUFF: BlockType = BlockType(3);
+use web_sys::{WebSocket};
+use js_sys::{Function};
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
@@ -23,18 +14,28 @@ extern "C" {
 }
 
 #[wasm_bindgen]
-pub fn greet() {
-  let mut chunk = Chunk::new();
-  let debugger = Debugger::new(hashmap!(UNKNOWN => 'X', EMPTY => '.', STUFF => 'S'));
+pub struct LotsaClient {
+  ws: WebSocket,
+}
 
-  debugger.load(
-    &mut chunk,
-    ".....
-     .....
-     .SSS.
-     .....
-     .....",
-  );
+#[wasm_bindgen]
+impl LotsaClient {
+  #[wasm_bindgen(constructor)]
+  pub fn new() -> LotsaClient {
+    let client = LotsaClient {
+      ws: WebSocket::new("ws://localhost:8088/ws/").expect("establish connection"),
+    };
 
-  alert(&debugger.dump(&chunk));
+
+    // let c = Closure::wrap(Box::new(move || alert("Hi") ));
+    // client.ws.set_onmessage(Some(c));
+    // c.forget();
+
+    client
+  }
+
+  pub fn handle_message(&self, data: &str) {
+    self.ws.send_with_str("HIYA").unwrap();
+    alert(data);
+  }
 }
