@@ -591,18 +591,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "lotsa"
+name = "lotsa_rust"
 version = "0.1.0"
 dependencies = [
  "actix-web 0.7.19 (registry+https://github.com/rust-lang/crates.io-index)",
  "maplit 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "lotsa-server"
-version = "0.1.0"
-dependencies = [
- "lotsa 0.1.0",
 ]
 
 [[package]]

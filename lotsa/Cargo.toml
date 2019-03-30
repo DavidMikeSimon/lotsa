@@ -1,0 +1,19 @@
+[package]
+name = "lotsa"
+version = "0.1.0"
+authors = ["David Simon <david.mike.simon@gmail.com>"]
+edition = "2018"
+description = "Distributed grid simulation thingie"
+license = "MIT"
+repository = "https://github.com/DavidMikeSimon/lotsa"
+keywords = ["distributed", "grid", "cellular"]
+categories = ["game-engines", "simulation"]
+readme = "README.md"
+
+[dependencies]
+maplit = "1.0.1"
+actix-web = "0.7"
+
+[lib]
+name = "lotsa"
+path = "src/lib.rs"
