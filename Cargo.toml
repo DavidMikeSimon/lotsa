@@ -3,4 +3,5 @@
 members = [
   "lotsa",
   "lotsa-server",
+  "lotsa-wasm",
 ]

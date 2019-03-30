@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate maplit;
 
-use actix_web::{server, App, HttpRequest};
+use wasm_bindgen::prelude::*;
 
 use lotsa::{
   block::{BlockType, EMPTY, UNKNOWN},
@@ -11,7 +11,19 @@ use lotsa::{
 
 pub const STUFF: BlockType = BlockType(3);
 
-fn index(_req: &HttpRequest) -> String {
+// When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
+// allocator.
+#[cfg(feature = "wee_alloc")]
+#[global_allocator]
+static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+
+#[wasm_bindgen]
+extern {
+  fn alert(s: &str);
+}
+
+#[wasm_bindgen]
+pub fn greet() {
   let mut chunk = Chunk::new();
   let debugger = Debugger::new(hashmap!(UNKNOWN => 'X', EMPTY => '.', STUFF => 'S'));
 
@@ -24,12 +36,5 @@ fn index(_req: &HttpRequest) -> String {
      .....",
   );
 
-  debugger.dump(&chunk)
-}
-
-pub fn main() {
-  server::new(|| App::new().resource("/", |r| r.f(index)))
-    .bind("127.0.0.1:8088")
-    .unwrap()
-    .run()
+  alert(&debugger.dump(&chunk));
 }

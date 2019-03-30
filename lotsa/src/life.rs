@@ -54,7 +54,6 @@ mod tests {
     let mut sim = Simulator::new(&mut chunk);
     init(&mut sim);
 
-    print!("{:?}", debugger.dump(sim.get_chunk()));
     sim.step();
     print!("{:?}", debugger.dump(sim.get_chunk()));
     debugger.assert_match(
