@@ -15,3 +15,4 @@ pub mod debug;
 pub mod life;
 pub mod point;
 pub mod sim;
+pub mod web;

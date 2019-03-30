@@ -12,3 +12,12 @@ readme = "README.md"
 
 [dependencies]
 maplit = "1.0.1"
+actix-web = "0.7"
+
+[lib]
+name = "lotsa"
+path = "src/lib.rs"
+
+[[bin]]
+name = "lotsa_server"
+path = "src/server.rs"
