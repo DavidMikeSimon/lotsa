@@ -1,6 +1,6 @@
-use wasm_bindgen::prelude::*;
-use web_sys::{WebSocket};
-use js_sys::{Function};
+use std::rc::Rc;
+use wasm_bindgen::{prelude::*, JsCast};
+use web_sys::{WebSocket, MessageEvent};
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
@@ -15,27 +15,44 @@ extern "C" {
 
 #[wasm_bindgen]
 pub struct LotsaClient {
-  ws: WebSocket,
+  core: Rc<LotsaClientCore>,
 }
 
 #[wasm_bindgen]
 impl LotsaClient {
   #[wasm_bindgen(constructor)]
   pub fn new() -> LotsaClient {
-    let client = LotsaClient {
+    let core = Rc::new(LotsaClientCore {
       ws: WebSocket::new("ws://localhost:8088/ws/").expect("establish connection"),
-    };
+    });
+    let core2 = core.clone();
 
+    let c = Closure::wrap(
+      Box::new(
+        move |msg: MessageEvent| core2.handle_message(msg)
+      ) as Box<dyn Fn(MessageEvent)>
+    );
+    core.ws.set_onmessage(Some(c.as_ref().unchecked_ref()));
+    c.forget(); // FIXME: Maybe keep it in LotsaClient instead? Need Rc<RefCell<LotsaClientCore>>?
 
-    // let c = Closure::wrap(Box::new(move || alert("Hi") ));
-    // client.ws.set_onmessage(Some(c));
-    // c.forget();
-
-    client
+    LotsaClient { core: core }
   }
 
-  pub fn handle_message(&self, data: &str) {
-    self.ws.send_with_str("HIYA").unwrap();
-    alert(data);
+  pub fn send_message(&self, data: &str) {
+    self.core.ws.send_with_str(data).unwrap();
+  }
+}
+
+struct LotsaClientCore {
+  ws: WebSocket,
+}
+
+impl LotsaClientCore {
+  fn handle_message(&self, msg: MessageEvent) {
+    if let Some(s) = msg.data().as_string() {
+      alert(&s);
+    } else {
+      alert("NOT A STRING");
+    }
   }
 }
