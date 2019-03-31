@@ -1,5 +1,5 @@
 use actix::{Actor, StreamHandler};
-use actix_web::{fs, ws, server, App, HttpRequest, HttpResponse};
+use actix_web::{fs, server, ws, App, HttpRequest, HttpResponse};
 
 struct LotsaWebsocketActor;
 
