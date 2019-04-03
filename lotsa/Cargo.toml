@@ -11,7 +11,9 @@ categories = ["game-engines", "simulation"]
 readme = "README.md"
 
 [dependencies]
-maplit = "1.0.1"
+maplit = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde-big-array = "0.1"
 
 [lib]
 name = "lotsa"

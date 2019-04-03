@@ -6,6 +6,10 @@
 #[cfg(test)]
 #[macro_use]
 extern crate maplit;
+
+#[macro_use]
+extern crate serde_big_array;
+
 #[cfg(test)]
 extern crate test;
 

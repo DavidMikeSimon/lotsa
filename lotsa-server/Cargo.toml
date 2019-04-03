@@ -15,6 +15,7 @@ lotsa = { path = "../lotsa" }
 actix = "0.7"
 actix-web = "0.7"
 maplit = "1.0.1"
+bincode = "1.1"
 
 [[bin]]
 name = "lotsa_server"

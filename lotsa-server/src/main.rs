@@ -1,5 +1,8 @@
 use actix::{Actor, StreamHandler};
 use actix_web::{fs, server, ws, App, HttpRequest, HttpResponse};
+use bincode::serialize;
+
+use lotsa::{block::EMPTY, chunk::Chunk, point::Point};
 
 struct LotsaWebsocketActor;
 
@@ -9,9 +12,15 @@ impl Actor for LotsaWebsocketActor {
 
 impl StreamHandler<ws::Message, ws::ProtocolError> for LotsaWebsocketActor {
   fn handle(&mut self, msg: ws::Message, ctx: &mut Self::Context) {
+    let mut c = Chunk::new();
+    c.set_block_type(Point::new(0, 0, 0), EMPTY);
+    c.set_block_type(Point::new(1, 1, 0), EMPTY);
+    c.set_block_type(Point::new(2, 2, 0), EMPTY);
+    c.set_block_type(Point::new(3, 3, 0), EMPTY);
+
     match msg {
       ws::Message::Ping(msg) => ctx.pong(&msg),
-      ws::Message::Text(_text) => ctx.text("Hello there"),
+      ws::Message::Text(_text) => ctx.binary(serialize(&c).unwrap()),
       _ => (),
     }
   }

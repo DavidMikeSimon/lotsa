@@ -3,6 +3,8 @@ use std::{
   ops::{Index, IndexMut},
 };
 
+use serde::{Deserialize, Serialize};
+
 use crate::{
   block::{BlockType, UNKNOWN},
   point::Point,
@@ -11,6 +13,8 @@ use crate::{
 pub const CHUNK_WIDTH: u8 = 32;
 pub const CHUNK_WIDTH_E2: usize = (CHUNK_WIDTH as usize) * (CHUNK_WIDTH as usize);
 pub const CHUNK_WIDTH_E3: usize = (CHUNK_WIDTH as usize) * CHUNK_WIDTH_E2;
+
+big_array! { BigArray; CHUNK_WIDTH_E3, }
 
 type BlockTypesArray = [BlockType; CHUNK_WIDTH_E3 as usize];
 
@@ -32,8 +36,9 @@ impl IndexMut<Point> for BlockTypesArray {
   }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Serialize, Deserialize)]
 pub struct Chunk {
+  #[serde(with = "BigArray")]
   block_types: BlockTypesArray,
 }
 
