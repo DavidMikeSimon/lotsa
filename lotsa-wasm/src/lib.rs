@@ -3,7 +3,8 @@ extern crate maplit;
 
 use std::rc::Rc;
 
-use bincode::deserialize;
+use bincode::deserialize_from;
+use flate2::read::ZlibDecoder;
 use js_sys::{ArrayBuffer, Uint8Array};
 use wasm_bindgen::{prelude::*, JsCast};
 use web_sys::{console, BinaryType, MessageEvent, WebSocket};
@@ -12,6 +13,7 @@ use lotsa::{
   block::{EMPTY, UNKNOWN},
   chunk::Chunk,
   debug::Debugger,
+  life::LIFE,
 };
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
@@ -27,8 +29,11 @@ pub struct LotsaClient {
 
 #[wasm_bindgen]
 impl LotsaClient {
+  #[allow(clippy::new_without_default)]
   #[wasm_bindgen(constructor)]
   pub fn new() -> LotsaClient {
+    console_error_panic_hook::set_once();
+
     let core = Rc::new(LotsaClientCore {
       ws: WebSocket::new("ws://localhost:8088/ws/").expect("establish connection"),
     });
@@ -59,10 +64,10 @@ impl LotsaClientCore {
     let mut buf: Vec<u8> = vec![0; js_a.length() as usize];
     js_a.copy_to(&mut buf[..]);
 
-    let chunk: Chunk = deserialize(&buf[..]).unwrap();
+    let decoder = ZlibDecoder::new(&buf[..]);
+    let chunk: Chunk = deserialize_from(decoder).expect("valid bincode");
 
-    let debugger = Debugger::new(hashmap!(UNKNOWN => 'X', EMPTY => '.'));
-
-    console::log_2(&"Chunk contents".into(), &debugger.dump(&chunk).into());
+    let debugger = Debugger::new(hashmap!(UNKNOWN => 'X', EMPTY => '.', LIFE => 'L'));
+    console::log_2(&"Chunk contents\n".into(), &debugger.dump(&chunk).into());
   }
 }
