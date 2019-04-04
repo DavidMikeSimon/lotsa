@@ -1,5 +1,9 @@
+use std::path::Path;
+
 mod game;
 
+const WWW_PATH: &str = "www";
+
 pub fn main() {
-  lotsa::server::start()
+  lotsa::server::start(WWW_PATH)
 }

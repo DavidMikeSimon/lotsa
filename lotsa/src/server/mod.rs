@@ -1,4 +1,4 @@
-use std::io::Write;
+use std::{path::Path, io::Write};
 
 use actix::{Actor, StreamHandler};
 use actix_web::{fs, server, ws, App, HttpRequest, HttpResponse};
@@ -33,10 +33,9 @@ impl StreamHandler<ws::Message, ws::ProtocolError> for LotsaWebsocketActor {
   }
 }
 
-fn webpack_dist() -> fs::StaticFiles<()> {
-  // TODO: Don't rely on fixed directory name
+fn webpack_dist(path: &str) -> fs::StaticFiles<()> {
   // TODO: Serve js directly from pkg folder, so we don't need symlink
-  fs::StaticFiles::new("www")
+  fs::StaticFiles::new(path)
     .expect("find www directory")
     .index_file("index.html")
 }
@@ -45,11 +44,11 @@ fn websocket_handler(req: &HttpRequest<()>) -> Result<HttpResponse, actix_web::e
   ws::start(req, LotsaWebsocketActor)
 }
 
-pub fn start() {
-  server::new(|| {
+pub fn start(path: &'static str) {
+  server::new(move || {
     App::new()
       .resource("/ws/", |r| r.f(|req| websocket_handler(req)))
-      .handler("/", webpack_dist())
+      .handler("/", webpack_dist(&path))
   })
   .bind("127.0.0.1:8088")
   .expect("bind to open port") // TODO
