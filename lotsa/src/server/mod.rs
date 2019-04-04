@@ -1,4 +1,4 @@
-use std::{path::Path, io::Write};
+use std::io::Write;
 
 use actix::{Actor, StreamHandler};
 use actix_web::{fs, server, ws, App, HttpRequest, HttpResponse};

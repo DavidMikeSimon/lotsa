@@ -22,7 +22,7 @@ impl LotsaClient {
   #[wasm_bindgen(constructor)]
   pub fn new() -> LotsaClient {
     console_error_panic_hook::set_once();
-    console_log::init_with_level(log::Level::Debug).expect("setting up console_log");
+    console_log::init_with_level(log::Level::Debug).expect("set up console_log");
 
     let core = Rc::new(LotsaClientCore {
       ws: WebSocket::new("ws://localhost:8088/ws/").expect("establish connection"),
