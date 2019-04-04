@@ -1,5 +1,5 @@
 run:
-  just lotsa-example/run
+  just lotsa-game-template/run
 
 build:
-  just lotsa-example/build
+  just lotsa-game-template/build

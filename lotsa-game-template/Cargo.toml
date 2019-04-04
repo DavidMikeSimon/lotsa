@@ -1,13 +1,8 @@
 [package]
-name = "lotsa-example"
+name = "lotsa-game-template" # TODO: Use {{project-name}} here somehow without breaking test runs?
 version = "0.1.0"
-authors = ["David Simon <david.mike.simon@gmail.com>"]
+authors = ["{{authors}}"]
 edition = "2018"
-description = "Distributed grid simulation thingie"
-license = "MIT"
-repository = "https://github.com/DavidMikeSimon/lotsa"
-keywords = ["distributed", "grid", "cellular"]
-categories = ["game-engines", "simulation"]
 readme = "README.md"
 
 [features]

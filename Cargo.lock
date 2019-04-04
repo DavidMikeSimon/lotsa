@@ -697,7 +697,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "lotsa-example"
+name = "lotsa-game-template"
 version = "0.1.0"
 dependencies = [
  "lotsa-client 0.1.0",

@@ -4,5 +4,5 @@ members = [
   "lotsa",
   "lotsa-server",
   "lotsa-client",
-  "lotsa-example",
+  "lotsa-game-template",
 ]
