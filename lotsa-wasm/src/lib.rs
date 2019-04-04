@@ -1,13 +1,14 @@
 #[macro_use]
+extern crate log;
+
+#[macro_use]
 extern crate maplit;
 
 use std::rc::Rc;
 
-use bincode::deserialize_from;
-use flate2::read::ZlibDecoder;
 use js_sys::{ArrayBuffer, Uint8Array};
 use wasm_bindgen::{prelude::*, JsCast};
-use web_sys::{console, BinaryType, MessageEvent, WebSocket};
+use web_sys::{BinaryType, MessageEvent, WebSocket};
 
 use lotsa::{
   block::{EMPTY, UNKNOWN},
@@ -33,6 +34,7 @@ impl LotsaClient {
   #[wasm_bindgen(constructor)]
   pub fn new() -> LotsaClient {
     console_error_panic_hook::set_once();
+    console_log::init_with_level(log::Level::Debug).expect("setting up console_log");
 
     let core = Rc::new(LotsaClientCore {
       ws: WebSocket::new("ws://localhost:8088/ws/").expect("establish connection"),
@@ -64,10 +66,10 @@ impl LotsaClientCore {
     let mut buf: Vec<u8> = vec![0; js_a.length() as usize];
     js_a.copy_to(&mut buf[..]);
 
-    let decoder = ZlibDecoder::new(&buf[..]);
-    let chunk: Chunk = deserialize_from(decoder).expect("valid bincode");
+    let decoder = flate2::read::ZlibDecoder::new(&buf[..]);
+    let chunk: Chunk = bincode::deserialize_from(decoder).expect("valid bincode");
 
     let debugger = Debugger::new(hashmap!(UNKNOWN => 'X', EMPTY => '.', LIFE => 'L'));
-    console::log_2(&"Chunk contents\n".into(), &debugger.dump(&chunk).into());
+    info!("Chunk contains:\n{}", &debugger.dump(&chunk));
   }
 }
