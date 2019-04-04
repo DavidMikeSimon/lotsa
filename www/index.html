@@ -1,10 +1,22 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta charset="utf-8">
-    <title>Lotsa</title>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type"/>
   </head>
   <body>
-    <script src="./bootstrap.js"></script>
+    <script type="module">
+      import { LotsaClient, default as init } from './lotsa_example.js';
+
+      let client;
+
+      async function run() {
+        await init('./lotsa_example_bg.wasm');
+        client = new LotsaClient();
+        setTimeout(() => client.send_message("WAT"), 1000);
+      }
+
+      run();
+    </script>
   </body>
 </html>
+

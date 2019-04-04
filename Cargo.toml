@@ -3,5 +3,6 @@
 members = [
   "lotsa",
   "lotsa-server",
-  "lotsa-wasm",
+  "lotsa-client",
+  "lotsa-example",
 ]

@@ -1,5 +1,5 @@
 [package]
-name = "lotsa-wasm"
+name = "lotsa-example"
 version = "0.1.0"
 authors = ["David Simon <david.mike.simon@gmail.com>"]
 edition = "2018"
@@ -10,21 +10,19 @@ keywords = ["distributed", "grid", "cellular"]
 categories = ["game-engines", "simulation"]
 readme = "README.md"
 
+[features]
+server = ["lotsa-server"]
+client = ["lotsa-client"]
+
 [lib]
 crate-type = ["cdylib", "rlib"]
+path = "client.rs"
+
+[[bin]]
+name = "server"
+path = "server.rs"
+required-features = ["server"]
 
 [dependencies]
-lotsa = { path = "../lotsa" }
-bincode = "1.1"
-console_error_panic_hook = "0.1.1"
-console_log = "0.1"
-flate2 = "1.0"
-js-sys = "0.3"
-log = "0.4"
-maplit = "1.0"
-wasm-bindgen = "0.2"
-web-sys = { version = "0.3", features = [ "console", "BinaryType", "MessageEvent", "WebSocket" ] }
-wee_alloc = "0.4.2"
-
-[dev-dependencies]
-wasm-bindgen-test = "0.2"
+lotsa-server = { path = "../lotsa-server", optional = true }
+lotsa-client = { path = "../lotsa-client", optional = true }

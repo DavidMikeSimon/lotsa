@@ -679,19 +679,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "lotsa-server"
-version = "0.1.0"
-dependencies = [
- "actix 0.7.9 (registry+https://github.com/rust-lang/crates.io-index)",
- "actix-web 0.7.19 (registry+https://github.com/rust-lang/crates.io-index)",
- "bincode 1.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "flate2 1.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "lotsa 0.1.0",
- "maplit 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "lotsa-wasm"
+name = "lotsa-client"
 version = "0.1.0"
 dependencies = [
  "bincode 1.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -706,6 +694,26 @@ dependencies = [
  "wasm-bindgen-test 0.2.40 (registry+https://github.com/rust-lang/crates.io-index)",
  "web-sys 0.3.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "wee_alloc 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "lotsa-example"
+version = "0.1.0"
+dependencies = [
+ "lotsa-client 0.1.0",
+ "lotsa-server 0.1.0",
+]
+
+[[package]]
+name = "lotsa-server"
+version = "0.1.0"
+dependencies = [
+ "actix 0.7.9 (registry+https://github.com/rust-lang/crates.io-index)",
+ "actix-web 0.7.19 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bincode 1.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "flate2 1.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lotsa 0.1.0",
+ "maplit 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
