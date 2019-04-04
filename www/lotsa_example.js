@@ -1,1 +1,0 @@
-../lotsa-example/pkg/lotsa_example.js
