@@ -5,7 +5,7 @@ use actix_web::{fs, server, ws, App, HttpRequest, HttpResponse};
 use bincode::serialize;
 use flate2::{write::ZlibEncoder, Compression};
 
-use lotsa::{chunk::Chunk, life::LIFE, point::Point};
+use crate::{chunk::Chunk, life::LIFE, point::Point};
 
 struct LotsaWebsocketActor;
 

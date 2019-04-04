@@ -1,6 +1,6 @@
 run: build
-  cargo run --features server
+  cargo run --features serverside
 
 build:
-  cargo build --features server
-  wasm-pack build --no-typescript --target web -- --features client
+  cargo build --features serverside
+  wasm-pack build --no-typescript --target web -- --features clientside

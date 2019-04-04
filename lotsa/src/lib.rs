@@ -3,9 +3,15 @@
 #![warn(future_incompatible)]
 #![warn(clippy::all)]
 
-#[cfg(test)]
+#[cfg(feature = "client")]
+#[global_allocator]
+static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+
 #[macro_use]
 extern crate maplit;
+
+#[macro_use]
+extern crate log;
 
 #[macro_use]
 extern crate serde_big_array;
@@ -19,3 +25,9 @@ pub mod debug;
 pub mod life;
 pub mod point;
 pub mod sim;
+
+#[cfg(feature = "client")]
+pub mod client;
+
+#[cfg(feature = "server")]
+pub mod server;

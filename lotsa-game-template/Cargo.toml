@@ -6,8 +6,8 @@ edition = "2018"
 readme = "README.md"
 
 [features]
-server = ["lotsa-server"]
-client = ["lotsa-client"]
+serverside = ["lotsa/server"]
+clientside = ["lotsa/client"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -16,8 +16,7 @@ path = "client.rs"
 [[bin]]
 name = "server"
 path = "server.rs"
-required-features = ["server"]
+required-features = ["serverside"]
 
 [dependencies]
-lotsa-server = { path = "../lotsa-server", optional = true }
-lotsa-client = { path = "../lotsa-client", optional = true }
+lotsa = { path = "../lotsa" }

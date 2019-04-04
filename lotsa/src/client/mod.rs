@@ -1,27 +1,15 @@
-#[macro_use]
-extern crate log;
-
-#[macro_use]
-extern crate maplit;
-
 use std::rc::Rc;
 
 use js_sys::{ArrayBuffer, Uint8Array};
 use wasm_bindgen::{prelude::*, JsCast};
 use web_sys::{BinaryType, MessageEvent, WebSocket};
 
-use lotsa::{
+use crate::{
   block::{EMPTY, UNKNOWN},
   chunk::Chunk,
   debug::Debugger,
   life::LIFE,
 };
-
-// When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
-// allocator.
-#[cfg(feature = "wee_alloc")]
-#[global_allocator]
-static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 #[wasm_bindgen]
 pub struct LotsaClient {

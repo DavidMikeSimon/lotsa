@@ -1,4 +1,5 @@
+#[cfg(feature = "clientside")]
 mod game;
 
-#[cfg(feature = "client")]
-pub use lotsa_client::LotsaClient;
+#[cfg(feature = "clientside")]
+pub use lotsa::client::LotsaClient;
