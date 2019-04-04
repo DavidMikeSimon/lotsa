@@ -36,7 +36,7 @@ impl StreamHandler<ws::Message, ws::ProtocolError> for LotsaWebsocketActor {
 fn webpack_dist() -> fs::StaticFiles<()> {
   // TODO: Don't rely on fixed directory name
   // TODO: Serve js directly from pkg folder, so we don't need symlink
-  fs::StaticFiles::new("lotsa-example/www")
+  fs::StaticFiles::new("www")
     .expect("find www directory")
     .index_file("index.html")
 }

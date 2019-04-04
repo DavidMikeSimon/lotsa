@@ -1,5 +1,4 @@
 mod game;
 
-// FIXME: Why doesn't this seem to work with cfg(client)?
-#[cfg(target_arch = "wasm32")]
+#[cfg(feature = "client")]
 pub use lotsa_client::LotsaClient;
