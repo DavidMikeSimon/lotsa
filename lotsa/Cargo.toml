@@ -11,7 +11,7 @@ categories = ["game-engines", "simulation"]
 readme = "README.md"
 
 [features]
-server = ["futures", "warp"]
+server = ["futures", "pretty_env_logger", "warp"]
 client = ["console_error_panic_hook", "console_log", "js-sys", "wasm-bindgen", "web-sys", "wee_alloc"]
 
 [dependencies]
@@ -24,6 +24,7 @@ log = "0.4"
 
 # Server-side dependenceis
 futures = { version = "0.1", optional = true }
+pretty_env_logger = { version = "0.3", optional = true }
 warp = { version = "0.1", optional = true }
 
 # Client-side dependencies

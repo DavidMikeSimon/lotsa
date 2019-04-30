@@ -23,7 +23,10 @@ fn ws_response(_msg: &warp::ws::Message) -> warp::ws::Message {
 }
 
 pub fn start() {
-  info!("starting server");
+  if let Err(_) = std::env::var("RUST_LOG") {
+    std::env::set_var("RUST_LOG", "info");
+  }
+  pretty_env_logger::init();
 
   let root_route = warp::fs::dir("www");
   let pkg_route = warp::path("pkg").and(warp::fs::dir("pkg"));
