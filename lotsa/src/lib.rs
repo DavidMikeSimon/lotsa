@@ -7,10 +7,11 @@
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
+#[allow(clippy::useless_attribute, unused)]
 #[macro_use]
-#[allow(unused)]
 extern crate maplit;
 
+#[allow(clippy::useless_attribute, unused)]
 #[macro_use]
 extern crate log;
 
