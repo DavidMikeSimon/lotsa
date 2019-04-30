@@ -5,12 +5,12 @@
   </head>
   <body>
     <script type="module">
-      import { LotsaClient, default as init } from './lotsa_example.js';
+      import { LotsaClient, default as init } from './pkg/lotsa_example.js';
 
       let client;
 
       async function run() {
-        await init('./lotsa_example_bg.wasm');
+        await init('./pkg/lotsa_example_bg.wasm');
         client = new LotsaClient();
         setTimeout(() => client.send_message("WAT"), 1000);
       }

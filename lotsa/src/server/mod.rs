@@ -1,56 +1,43 @@
 use std::io::Write;
 
-use actix::{Actor, StreamHandler};
-use actix_web::{fs, server, ws, App, HttpRequest, HttpResponse};
 use bincode::serialize;
 use flate2::{write::ZlibEncoder, Compression};
+use futures::future::Future;
+use futures::stream::Stream;
+use warp::Filter;
 
 use crate::{chunk::Chunk, life::LIFE, point::Point};
 
-struct LotsaWebsocketActor;
+fn ws_response(_msg: &warp::ws::Message) -> warp::ws::Message {
+  let mut c = Chunk::new();
+  c.set_block_type(Point::new(0, 0, 0), LIFE);
+  c.set_block_type(Point::new(1, 1, 0), LIFE);
+  c.set_block_type(Point::new(2, 2, 0), LIFE);
+  c.set_block_type(Point::new(3, 3, 0), LIFE);
 
-impl Actor for LotsaWebsocketActor {
-  type Context = ws::WebsocketContext<Self>;
+  let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default());
+  encoder.write_all(&serialize(&c).expect("serialize chunk")).expect("compress message");
+  let bytes = encoder.finish().expect("finish compressing message");
+
+  warp::ws::Message::binary(bytes)
 }
 
-impl StreamHandler<ws::Message, ws::ProtocolError> for LotsaWebsocketActor {
-  fn handle(&mut self, msg: ws::Message, ctx: &mut Self::Context) {
-    let mut c = Chunk::new();
-    c.set_block_type(Point::new(0, 0, 0), LIFE);
-    c.set_block_type(Point::new(1, 1, 0), LIFE);
-    c.set_block_type(Point::new(2, 2, 0), LIFE);
-    c.set_block_type(Point::new(3, 3, 0), LIFE);
+pub fn start() {
+  info!("starting server");
 
-    let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default());
-    encoder.write_all(&serialize(&c).unwrap()).unwrap();
-    let bytes = encoder.finish().unwrap();
+  let root_route = warp::fs::dir("www");
+  let pkg_route = warp::path("pkg").and(warp::fs::dir("pkg"));
+  let ws_route = warp::path("ws").and(warp::ws2()).map(|ws: warp::ws::Ws2| {
+    ws.on_upgrade(|websocket| {
+      let (tx, rx) = websocket.split();
+      rx
+        .map(|msg| ws_response(&msg))
+        .forward(tx)
+        .map(|_| ())
+        .map_err(|e| { error!("websocket error: {:?}", e); } )
+    })
+  });
 
-    match msg {
-      ws::Message::Ping(msg) => ctx.pong(&msg),
-      ws::Message::Text(_text) => ctx.binary(bytes),
-      _ => (),
-    }
-  }
-}
-
-fn webpack_dist(path: &str) -> fs::StaticFiles<()> {
-  // TODO: Serve js directly from pkg folder, so we don't need symlink
-  fs::StaticFiles::new(path)
-    .expect("find www directory")
-    .index_file("index.html")
-}
-
-fn websocket_handler(req: &HttpRequest<()>) -> Result<HttpResponse, actix_web::error::Error> {
-  ws::start(req, LotsaWebsocketActor)
-}
-
-pub fn start(path: &'static str) {
-  server::new(move || {
-    App::new()
-      .resource("/ws/", |r| r.f(|req| websocket_handler(req)))
-      .handler("/", webpack_dist(&path))
-  })
-  .bind("127.0.0.1:8088")
-  .expect("bind to open port") // TODO
-  .run()
+  let routes = root_route.or(pkg_route).or(ws_route);
+  warp::serve(routes).run(([0, 0, 0, 0], 8088));
 }

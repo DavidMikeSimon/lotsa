@@ -11,8 +11,8 @@ categories = ["game-engines", "simulation"]
 readme = "README.md"
 
 [features]
+server = ["futures", "warp"]
 client = ["console_error_panic_hook", "console_log", "js-sys", "wasm-bindgen", "web-sys", "wee_alloc"]
-server = ["actix", "actix-web"]
 
 [dependencies]
 maplit = "1.0"
@@ -23,16 +23,25 @@ flate2 = "1.0"
 log = "0.4"
 
 # Server-side dependenceis
-actix = { version = "0.7", optional = true }
-actix-web = { version = "0.7", optional = true }
+futures = { version = "0.1", optional = true }
+warp = { version = "0.1", optional = true }
 
 # Client-side dependencies
 console_error_panic_hook = { version = "0.1.1", optional = true }
 console_log = { version = "0.1", optional = true }
 js-sys = { version = "0.3", optional = true }
 wasm-bindgen = { version = "0.2", optional = true }
-web-sys = { version = "0.3", features = [ "console", "BinaryType", "MessageEvent", "WebSocket" ], optional = true }
 wee_alloc = { version = "0.4.2", optional = true }
+
+[dependencies.web-sys]
+version = "0.3"
+optional = true
+features = [
+  "BinaryType",
+  "MessageEvent",
+  "WebSocket",
+  "console",
+]
 
 [lib]
 name = "lotsa"

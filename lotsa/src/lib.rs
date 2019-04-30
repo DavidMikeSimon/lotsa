@@ -8,6 +8,7 @@
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 #[macro_use]
+#[allow(unused)]
 extern crate maplit;
 
 #[macro_use]
