@@ -10,6 +10,7 @@ serverside = ["lotsa/server"]
 clientside = ["lotsa/client"]
 
 [lib]
+name = "lotsa_client"
 crate-type = ["cdylib", "rlib"]
 path = "client.rs"
 

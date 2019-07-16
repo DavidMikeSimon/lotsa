@@ -2,4 +2,4 @@
 mod game;
 
 #[cfg(feature = "clientside")]
-pub use lotsa::client::LotsaClient;
+pub use lotsa::client::LotsaClientWrapper;

@@ -11,8 +11,19 @@ categories = ["game-engines", "simulation"]
 readme = "README.md"
 
 [features]
-server = ["futures", "pretty_env_logger", "warp"]
-client = ["console_error_panic_hook", "console_log", "js-sys", "wasm-bindgen", "web-sys", "wee_alloc"]
+server = [
+  "futures",
+  "pretty_env_logger",
+  "warp"
+]
+client = [
+  "console_error_panic_hook",
+  "console_log",
+  "js-sys",
+  "wasm-bindgen",
+  "web-sys",
+  "wee_alloc"
+]
 
 [dependencies]
 maplit = "1.0"
@@ -39,8 +50,13 @@ version = "0.3"
 optional = true
 features = [
   "BinaryType",
+  "CanvasRenderingContext2d",
+  "Document",
+  "Element",
+  "HtmlCanvasElement",
   "MessageEvent",
   "WebSocket",
+  "Window",
   "console",
 ]
 
