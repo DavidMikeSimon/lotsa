@@ -6,8 +6,7 @@ use web_sys::{BinaryType, CanvasRenderingContext2d, HtmlCanvasElement, MessageEv
 
 use crate::{
   block::{EMPTY, UNKNOWN},
-  chunk::Chunk,
-  debug::Debugger,
+  chunk::{Chunk, CHUNK_WIDTH},
   life::LIFE,
 };
 
@@ -55,6 +54,8 @@ struct LotsaClient {
   canvas_width: u32,
   canvas_height: u32,
 }
+
+const GRID: f64 = 2.0;
 
 impl LotsaClient {
   pub fn new() -> LotsaClient {
@@ -105,14 +106,47 @@ impl LotsaClient {
     let chunk: Chunk =
       bincode::deserialize_from(decoder).expect("message is valid gzipped bincode Chunk"); // TODO
 
+    self.draw(&chunk);
+  }
+
+  fn draw(&self, chunk: &Chunk) {
     self.canvas_ctx.begin_path();
+
     self
       .canvas_ctx
-      .set_fill_style(JsString::from("#0000ff").as_ref());
-    self.canvas_ctx.fill_rect(50.0, 50.0, 100.0, 100.0);
-    self.canvas_ctx.stroke();
+      .set_fill_style(JsString::from("#eee").as_ref());
+    self.canvas_ctx.fill_rect(
+      0.0,
+      0.0,
+      self.canvas_width as f64,
+      self.canvas_height as f64,
+    );
 
-    let debugger = Debugger::new(hashmap!(UNKNOWN => 'X', EMPTY => '.', LIFE => 'L'));
-    info!("Chunk contains:\n{}", &debugger.dump(&chunk));
+    let cell_width: f64 = ((self.canvas_width as f64 - GRID) / (CHUNK_WIDTH as f64) - GRID) as f64;
+    let cell_height: f64 =
+      ((self.canvas_height as f64 - GRID) / (CHUNK_WIDTH as f64) - GRID) as f64;
+
+    for block in chunk.blocks_iter() {
+      let pos = block.pos();
+      if pos.z() > 0 {
+        continue;
+      }
+
+      let color_str = match block.block_type() {
+        EMPTY => "#fff",
+        UNKNOWN => "#f00",
+        LIFE => "#00f",
+        _ => "#0f0",
+      };
+      self
+        .canvas_ctx
+        .set_fill_style(JsString::from(color_str).as_ref());
+
+      let x: f64 = GRID + (pos.x() as f64) * (cell_width + GRID);
+      let y: f64 = GRID + (pos.y() as f64) * (cell_height + GRID);
+      self.canvas_ctx.fill_rect(x, y, cell_width, cell_height);
+    }
+
+    self.canvas_ctx.stroke();
   }
 }

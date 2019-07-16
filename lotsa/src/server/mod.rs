@@ -5,14 +5,22 @@ use flate2::{write::ZlibEncoder, Compression};
 use futures::{future::Future, stream::Stream};
 use warp::Filter;
 
-use crate::{chunk::Chunk, life::LIFE, point::Point};
+use crate::{block::EMPTY, chunk::Chunk, debug::Debugger, life::LIFE};
 
 fn ws_response(_msg: &warp::ws::Message) -> warp::ws::Message {
   let mut c = Chunk::new();
-  c.set_block_type(Point::new(0, 0, 0), LIFE);
-  c.set_block_type(Point::new(1, 1, 0), LIFE);
-  c.set_block_type(Point::new(2, 2, 0), LIFE);
-  c.set_block_type(Point::new(3, 3, 0), LIFE);
+  c.fill_with_block_type(EMPTY);
+
+  let debugger = Debugger::new(hashmap!(EMPTY => '.', LIFE => 'L'));
+  debugger.load(
+    &mut c,
+    ".....
+     .LLL.
+     .....
+     .....
+     .....
+     .LLL.",
+  );
 
   let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default());
   encoder

@@ -61,6 +61,10 @@ impl Chunk {
     self.block_types[pos] = block_type;
   }
 
+  pub fn fill_with_block_type(&mut self, block_type: BlockType) {
+    self.block_types = [block_type; CHUNK_WIDTH_E3];
+  }
+
   pub fn blocks_iter(&self) -> ChunkBlocksIterator<'_> { ChunkBlocksIterator::new(self) }
 
   pub fn neighbor_types(&self, pos: Point) -> Vec<BlockType> {
@@ -150,7 +154,16 @@ mod tests {
   }
 
   #[test]
-  fn test_get_blocks() {
+  fn test_fill_with_block_type() {
+    let mut c = Chunk::new();
+    let p = Point::new(4, 5, 6);
+    assert_eq!(c.get_block(p).block_type, UNKNOWN);
+    c.fill_with_block_type(COBBLE);
+    assert_eq!(c.get_block(p).block_type, COBBLE);
+  }
+
+  #[test]
+  fn test_blocks_iter() {
     let c = three_cobble_chunk();
 
     let mut iter = c.blocks_iter().filter(|b| b.block_type == COBBLE);
