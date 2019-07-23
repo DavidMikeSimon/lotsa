@@ -1,3 +1,6 @@
 mod game;
 
-pub fn main() { lotsa::server::start() }
+pub fn main() {
+  let server = lotsa::server::Server::new();
+  server.start();
+}
