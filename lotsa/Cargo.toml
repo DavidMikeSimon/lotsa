@@ -14,6 +14,7 @@ readme = "README.md"
 server = [
   "futures",
   "pretty_env_logger",
+  "tokio",
   "warp"
 ]
 client = [
@@ -36,6 +37,7 @@ log = "0.4"
 # Server-side dependenceis
 futures = { version = "0.1", optional = true }
 pretty_env_logger = { version = "0.3", optional = true }
+tokio = { version = "0.1", optional = true }
 warp = { version = "0.1", optional = true }
 
 # Client-side dependencies
