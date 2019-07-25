@@ -1,4 +1,4 @@
-use std::io::Write;
+use std::{io::Write, sync::Arc};
 
 use bincode::serialize;
 use flate2::{write::ZlibEncoder, Compression};
@@ -7,10 +7,10 @@ use warp::Filter;
 
 use crate::{block::EMPTY, chunk::Chunk, debug::Debugger, life::LIFE};
 
-pub struct Server {}
+struct WsHandler {}
 
-impl Server {
-  fn ws_response(&self, _msg: &warp::ws::Message) -> warp::ws::Message {
+impl WsHandler {
+  fn msg_response(&self, _msg: &warp::ws::Message) -> warp::ws::Message {
     let mut c = Chunk::new();
     c.fill_with_block_type(EMPTY);
 
@@ -33,6 +33,18 @@ impl Server {
 
     warp::ws::Message::binary(bytes)
   }
+}
+
+pub struct Server {
+  ws_handler: Arc<WsHandler>,
+}
+
+impl Server {
+  pub fn new() -> Server {
+    Server {
+      ws_handler: Arc::new(WsHandler {}),
+    }
+  }
 
   pub fn start(&self) {
     if let Err(_) = std::env::var("RUST_LOG") {
@@ -42,18 +54,24 @@ impl Server {
 
     let root_route = warp::fs::dir("www");
     let pkg_route = warp::path("pkg").and(warp::fs::dir("pkg"));
-    let ws_route = warp::path("ws").and(warp::ws2()).map(|ws: warp::ws::Ws2| {
-      ws.on_upgrade(|websocket| {
-        let (socket_tx, socket_rx) = websocket.split();
-        socket_rx
-          .map(|msg| self.ws_response(&msg))
-          .forward(socket_tx)
-          .map(|_| ())
-          .map_err(|e| {
-            error!("websocket error: {:?}", e);
-          })
-      })
-    });
+
+    let ws_handler = self.ws_handler.clone();
+    let ws_handler_state_route = warp::any().map(move || ws_handler.clone());
+    let ws_route = warp::path("ws")
+      .and(warp::ws2())
+      .and(ws_handler_state_route)
+      .map(|ws: warp::ws::Ws2, ws_handler: Arc<WsHandler>| {
+        ws.on_upgrade(move |websocket| {
+          let (socket_tx, socket_rx) = websocket.split();
+          socket_rx
+            .map(move |msg| ws_handler.msg_response(&msg))
+            .forward(socket_tx)
+            .map(|_| ())
+            .map_err(|e| {
+              error!("websocket error: {:?}", e);
+            })
+        })
+      });
 
     let routes = root_route.or(pkg_route).or(ws_route);
     warp::serve(routes).run(([0, 0, 0, 0], 8088));

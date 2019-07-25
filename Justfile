@@ -3,3 +3,6 @@ run:
 
 build:
   just lotsa-game-template/build
+
+test:
+  cargo test
