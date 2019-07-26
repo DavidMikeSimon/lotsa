@@ -23,7 +23,6 @@
       async function run() {
         await init('./pkg/lotsa_client_bg.wasm');
         wrapper = new LotsaClientWrapper();
-        setTimeout(() => wrapper.send_message("WAT"), 1000);
       }
 
       run();

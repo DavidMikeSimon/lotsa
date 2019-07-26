@@ -1,4 +1,4 @@
-use std::io::Write;
+use std::{collections::HashMap, io::Write, time::Duration};
 
 use actix::prelude::*;
 use actix::*;
@@ -10,16 +10,32 @@ use flate2::{write::ZlibEncoder, Compression};
 
 use crate::{block::EMPTY, chunk::Chunk, debug::Debugger, life, sim::Simulator};
 
-#[derive(Debug)]
+#[derive(Debug, Message)]
 struct ClientMessage {}
 
-impl Message for ClientMessage {
-  type Result = Vec<u8>;
+#[derive(Debug, Message)]
+struct ServerMessage {
+  bytes: Vec<u8>
 }
+
+type SessionId = usize;
+
+struct ClientConnected {
+  session: Addr<WebsocketSession>
+}
+
+impl Message for ClientConnected {
+  type Result = SessionId;
+}
+
+#[derive(Debug, Message)]
+struct Tick {}
 
 struct World {
   chunk: Chunk,
   sim: Simulator,
+  next_id: usize,
+  sessions: HashMap<usize, Addr<WebsocketSession>>
 }
 
 impl World {
@@ -27,8 +43,7 @@ impl World {
     let mut chunk = Chunk::new();
     chunk.fill_with_block_type(EMPTY);
 
-    let debugger = Debugger::new(hashmap!(EMPTY => '.', life::LIFE => 'L'));
-    debugger.load(
+    Debugger::new(hashmap!(EMPTY => '.', life::LIFE => 'L')).load(
       &mut chunk,
       ".....
         .LLL.
@@ -42,36 +57,71 @@ impl World {
     let mut sim = Simulator::new();
     life::init(&mut sim);
 
-    World { chunk, sim }
+    World { chunk, sim, next_id: 1, sessions: HashMap::new() }
   }
-}
 
-impl Actor for World {
-  type Context = Context<Self>;
-}
-
-impl Handler<ClientMessage> for World {
-  type Result = MessageResult<ClientMessage>;
-
-  fn handle(&mut self, msg: ClientMessage, _ctx: &mut Context<Self>) -> Self::Result {
-    info!("got client message {:?}", msg);
+  fn encode_chunk_and_step(&mut self) -> Vec<u8> {
     let serialized = serialize(&self.chunk).expect("serialize chunk");
 
     self.sim.step(&mut self.chunk);
 
     let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default());
     encoder.write_all(&serialized).expect("compress message");
-    MessageResult(encoder.finish().expect("finish compressing message"))
+    encoder.finish().expect("finish compressing message")
+  }
+}
+
+impl Actor for World {
+  type Context = Context<Self>;
+
+  fn started(&mut self, ctx: &mut Self::Context) {
+    ctx.run_interval(Duration::from_millis(100), |_, ctx| {
+      ctx.address().do_send(Tick {});
+    });
+  }
+}
+
+impl Handler<ClientMessage> for World {
+  type Result = ();
+
+  fn handle(&mut self, msg: ClientMessage, _ctx: &mut Context<Self>) {
+    info!("got client message {:?}", msg);
+  }
+}
+
+impl Handler<ClientConnected> for World {
+  type Result = usize;
+
+  fn handle(&mut self, msg: ClientConnected, _ctx: &mut Context<Self>) -> Self::Result {
+    let id = self.next_id;
+    self.next_id = self.next_id + 1;
+    info!("client #{} connected", id);
+    self.sessions.insert(id, msg.session);
+    id
+  }
+}
+
+impl Handler<Tick> for World {
+  type Result = ();
+
+  fn handle(&mut self, _msg: Tick, ctx: &mut Context<Self>) {
+    let bytes = self.encode_chunk_and_step();
+    
+    for (_id, session) in self.sessions.iter() {
+      // FIXME: Probably inefficient to clone the vec
+      session.try_send(ServerMessage { bytes: bytes.clone() }).expect("send message to client session");
+    }
   }
 }
 
 struct WebsocketSession {
+  id: Option<usize>,
   web_common: WebCommon,
 }
 
 impl WebsocketSession {
   fn new(web_common: WebCommon) -> WebsocketSession {
-    WebsocketSession { web_common }
+    WebsocketSession { id: None, web_common }
   }
 }
 
@@ -80,6 +130,19 @@ impl Actor for WebsocketSession {
 
   fn started(&mut self, ctx: &mut Self::Context) {
     info!("ws session started");
+    self
+      .web_common
+      .world
+      .send(ClientConnected { session: ctx.address() })
+      .into_actor(self)
+      .then(|res, act, ctx| {
+        match res {
+          Ok(id) => act.id = Some(id),
+          _ => ctx.stop()
+        }
+        fut::ok(())
+      })
+      .wait(ctx);
   }
 }
 
@@ -89,16 +152,16 @@ impl StreamHandler<ws::Message, ws::ProtocolError> for WebsocketSession {
     self
       .web_common
       .world
-      .send(ClientMessage {})
-      .into_actor(self)
-      .then(|res, _, ctx| {
-        match res {
-          Ok(bytes) => ctx.binary(bytes),
-          _ => ctx.stop(),
-        }
-        fut::ok(())
-      })
-      .wait(ctx);
+      .try_send(ClientMessage {})
+      .expect("send message to world process");
+  }
+}
+
+impl Handler<ServerMessage> for WebsocketSession {
+  type Result = ();
+
+  fn handle(&mut self, msg: ServerMessage, ctx: &mut Self::Context) {
+    ctx.binary(msg.bytes);
   }
 }
 
