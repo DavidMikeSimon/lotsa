@@ -5,7 +5,6 @@ use crate::{block::BlockType, chunk::Chunk, point::Point};
 type UpdaterFn = fn(BlockType, &[BlockType]) -> Option<BlockType>;
 
 pub struct Simulator {
-  chunk: Chunk,
   updaters: HashMap<BlockType, Vec<UpdaterFn>>,
 }
 
@@ -16,14 +15,11 @@ struct BlockTypeUpdate {
 }
 
 impl Simulator {
-  pub fn new(chunk: &mut Chunk) -> Simulator {
+  pub fn new() -> Simulator {
     Simulator {
-      chunk: *chunk,
       updaters: HashMap::new(),
     }
   }
-
-  pub fn get_chunk(&self) -> &Chunk { &self.chunk }
 
   pub fn add_updater(&mut self, target: BlockType, updater: UpdaterFn) {
     self
@@ -33,14 +29,14 @@ impl Simulator {
       .push(updater);
   }
 
-  pub fn step(&mut self) {
+  pub fn step(&self, chunk: &mut Chunk) {
     let mut updates: Vec<BlockTypeUpdate> = Vec::new();
 
-    for block in self.chunk.blocks_iter() {
+    for block in chunk.blocks_iter() {
       if let Some(updaters) = self.updaters.get(&block.block_type) {
         for updater in updaters {
           if let Some(new_block_type) =
-            updater(block.block_type, &self.chunk.neighbor_types(block.pos))
+            updater(block.block_type, &chunk.neighbor_types(block.pos))
           {
             updates.push(BlockTypeUpdate {
               pos: block.pos,
@@ -52,7 +48,7 @@ impl Simulator {
     }
 
     for update in updates {
-      self.chunk.set_block_type(update.pos, update.block_type);
+      chunk.set_block_type(update.pos, update.block_type);
     }
   }
 }

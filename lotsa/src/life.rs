@@ -51,13 +51,13 @@ mod tests {
        .....",
     );
 
-    let mut sim = Simulator::new(&mut chunk);
+    let mut sim = Simulator::new();
     init(&mut sim);
 
-    sim.step();
-    print!("{:?}", debugger.dump(sim.get_chunk()));
+    sim.step(&mut chunk);
+    print!("{:?}", debugger.dump(&chunk));
     debugger.assert_match(
-      sim.get_chunk(),
+      &chunk,
       ".....
        ..L..
        ..L..
@@ -65,9 +65,9 @@ mod tests {
        .....",
     );
 
-    sim.step();
+    sim.step(&mut chunk);
     debugger.assert_match(
-      sim.get_chunk(),
+      &chunk,
       ".....
        .....
        .LLL.
@@ -92,11 +92,11 @@ mod tests {
 
     b.iter(|| {
       let mut chunk = base_chunk;
-      let mut sim = Simulator::new(&mut chunk);
+      let mut sim = Simulator::new();
       init(&mut sim);
 
       for _x in 1..10 {
-        sim.step();
+        sim.step(&mut chunk);
       }
     });
   }
