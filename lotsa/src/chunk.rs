@@ -65,7 +65,9 @@ impl Chunk {
     self.block_types = [block_type; CHUNK_WIDTH_E3];
   }
 
-  pub fn blocks_iter(&self) -> ChunkBlocksIterator<'_> { ChunkBlocksIterator::new(self) }
+  pub fn blocks_iter(&self) -> ChunkBlocksIterator<'_> {
+    ChunkBlocksIterator::new(self)
+  }
 
   pub fn neighbor_types(&self, pos: Point) -> Vec<BlockType> {
     let mut r = Vec::new();
@@ -91,7 +93,9 @@ impl Chunk {
 }
 
 impl Default for Chunk {
-  fn default() -> Self { Self::new() }
+  fn default() -> Self {
+    Self::new()
+  }
 }
 
 pub struct ChunkBlocksIterator<'a> {
@@ -237,7 +241,11 @@ pub struct BlockView<'a> {
 }
 
 impl<'a> BlockView<'a> {
-  pub fn block_type(&self) -> BlockType { self.block_type }
+  pub fn block_type(&self) -> BlockType {
+    self.block_type
+  }
 
-  pub fn pos(&self) -> Point { self.pos }
+  pub fn pos(&self) -> Point {
+    self.pos
+  }
 }

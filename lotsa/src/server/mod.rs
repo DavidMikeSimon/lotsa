@@ -1,7 +1,7 @@
 use std::io::Write;
 
-use actix::*;
 use actix::prelude::*;
+use actix::*;
 use actix_files as fs;
 use actix_web::{web, HttpRequest};
 use actix_web_actors::ws;
@@ -11,7 +11,7 @@ use flate2::{write::ZlibEncoder, Compression};
 use crate::{block::EMPTY, chunk::Chunk, debug::Debugger, life, sim::Simulator};
 
 #[derive(Debug)]
-struct ClientMessage { }
+struct ClientMessage {}
 
 impl Message for ClientMessage {
   type Result = Vec<u8>;
@@ -19,7 +19,7 @@ impl Message for ClientMessage {
 
 struct World {
   chunk: Chunk,
-  sim: Simulator
+  sim: Simulator,
 }
 
 impl World {
@@ -65,7 +65,9 @@ impl Handler<ClientMessage> for World {
   }
 }
 
-struct WebsocketSession { web_common: WebCommon }
+struct WebsocketSession {
+  web_common: WebCommon,
+}
 
 impl WebsocketSession {
   fn new(web_common: WebCommon) -> WebsocketSession {
@@ -84,8 +86,10 @@ impl Actor for WebsocketSession {
 impl StreamHandler<ws::Message, ws::ProtocolError> for WebsocketSession {
   fn handle(&mut self, msg: ws::Message, ctx: &mut Self::Context) {
     info!("got ws message {:?}", msg);
-    self.web_common.world
-      .send(ClientMessage{})
+    self
+      .web_common
+      .world
+      .send(ClientMessage {})
       .into_actor(self)
       .then(|res, _, ctx| {
         match res {
@@ -100,21 +104,20 @@ impl StreamHandler<ws::Message, ws::ProtocolError> for WebsocketSession {
 
 type HttpResult = Result<actix_web::HttpResponse, actix_web::Error>;
 
-fn websockets_route(req: HttpRequest, stream: web::Payload, data: web::Data<WebCommon>) -> HttpResult {
-  ws::start(
-    WebsocketSession::new(data.get_ref().clone()),
-    &req,
-    stream
-  )
+fn websockets_route(
+  req: HttpRequest,
+  stream: web::Payload,
+  data: web::Data<WebCommon>,
+) -> HttpResult {
+  ws::start(WebsocketSession::new(data.get_ref().clone()), &req, stream)
 }
 
 #[derive(Clone)]
 struct WebCommon {
-  world: Addr<World>
+  world: Addr<World>,
 }
 
-pub struct Server {
-}
+pub struct Server {}
 
 impl Server {
   pub fn new() -> Server {
@@ -133,7 +136,9 @@ impl Server {
 
     actix_web::HttpServer::new(move || {
       actix_web::App::new()
-        .data(WebCommon { world: world.clone() })
+        .data(WebCommon {
+          world: world.clone(),
+        })
         .service(web::resource("/ws/").to(websockets_route))
         .service(fs::Files::new("/pkg/", "pkg/"))
         .service(fs::Files::new("/", "www/").index_file("index.html"))
