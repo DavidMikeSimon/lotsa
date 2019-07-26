@@ -10,28 +10,20 @@ use flate2::{write::ZlibEncoder, Compression};
 
 use crate::{block::EMPTY, chunk::Chunk, debug::Debugger, life, sim::Simulator};
 
-struct WebsocketSession {
+#[derive(Debug)]
+struct ClientMessage { }
 
+impl Message for ClientMessage {
+  type Result = Vec<u8>;
 }
 
-impl WebsocketSession {
-  fn new() -> WebsocketSession {
-    WebsocketSession { }
-  }
+struct World {
+  chunk: Chunk,
+  sim: Simulator
 }
 
-impl Actor for WebsocketSession {
-  type Context = ws::WebsocketContext<Self>;
-
-  fn started(&mut self, ctx: &mut Self::Context) {
-    info!("ws session started");
-  }
-}
-
-impl StreamHandler<ws::Message, ws::ProtocolError> for WebsocketSession {
-  fn handle(&mut self, msg: ws::Message, ctx: &mut Self::Context) {
-    info!("got message {:?}", msg);
-
+impl World {
+  fn new() -> World {
     let mut chunk = Chunk::new();
     chunk.fill_with_block_type(EMPTY);
 
@@ -47,26 +39,78 @@ impl StreamHandler<ws::Message, ws::ProtocolError> for WebsocketSession {
         .....",
     );
 
-    // let mut sim = Simulator::new();
-    // life::init(&mut sim);
+    let mut sim = Simulator::new();
+    life::init(&mut sim);
+
+    World { chunk, sim }
+  }
+}
+
+impl Actor for World {
+  type Context = Context<Self>;
+}
+
+impl Handler<ClientMessage> for World {
+  type Result = MessageResult<ClientMessage>;
+
+  fn handle(&mut self, msg: ClientMessage, _ctx: &mut Context<Self>) -> Self::Result {
+    info!("got client message {:?}", msg);
+    let serialized = serialize(&self.chunk).expect("serialize chunk");
+
+    self.sim.step(&mut self.chunk);
 
     let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default());
-    encoder
-        .write_all(&serialize(&chunk).expect("serialize chunk"))
-        .expect("compress message");
-    let bytes = encoder.finish().expect("finish compressing message");
-    ctx.binary(bytes);
+    encoder.write_all(&serialized).expect("compress message");
+    MessageResult(encoder.finish().expect("finish compressing message"))
+  }
+}
+
+struct WebsocketSession { web_common: WebCommon }
+
+impl WebsocketSession {
+  fn new(web_common: WebCommon) -> WebsocketSession {
+    WebsocketSession { web_common }
+  }
+}
+
+impl Actor for WebsocketSession {
+  type Context = ws::WebsocketContext<Self>;
+
+  fn started(&mut self, ctx: &mut Self::Context) {
+    info!("ws session started");
+  }
+}
+
+impl StreamHandler<ws::Message, ws::ProtocolError> for WebsocketSession {
+  fn handle(&mut self, msg: ws::Message, ctx: &mut Self::Context) {
+    info!("got ws message {:?}", msg);
+    self.web_common.world
+      .send(ClientMessage{})
+      .into_actor(self)
+      .then(|res, _, ctx| {
+        match res {
+          Ok(bytes) => ctx.binary(bytes),
+          _ => ctx.stop(),
+        }
+        fut::ok(())
+      })
+      .wait(ctx);
   }
 }
 
 type HttpResult = Result<actix_web::HttpResponse, actix_web::Error>;
 
-fn websockets_route(req: HttpRequest, stream: web::Payload) -> HttpResult {
+fn websockets_route(req: HttpRequest, stream: web::Payload, data: web::Data<WebCommon>) -> HttpResult {
   ws::start(
-    WebsocketSession::new(),
+    WebsocketSession::new(data.get_ref().clone()),
     &req,
     stream
   )
+}
+
+#[derive(Clone)]
+struct WebCommon {
+  world: Addr<World>
 }
 
 pub struct Server {
@@ -85,8 +129,11 @@ impl Server {
 
     let sys = System::new("lotsa");
 
+    let world = World::new().start();
+
     actix_web::HttpServer::new(move || {
       actix_web::App::new()
+        .data(WebCommon { world: world.clone() })
         .service(web::resource("/ws/").to(websockets_route))
         .service(fs::Files::new("/pkg/", "pkg/"))
         .service(fs::Files::new("/", "www/").index_file("index.html"))
