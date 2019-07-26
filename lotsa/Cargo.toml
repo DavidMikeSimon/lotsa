@@ -12,11 +12,13 @@ readme = "README.md"
 
 [features]
 server = [
+  "actix",
+  "actix-web",
+  "actix-web-actors",
+  "actix-files",
   "futures",
-  "futures-locks",
   "pretty_env_logger",
-  "tokio",
-  "warp"
+  "tokio-io"
 ]
 client = [
   "console_error_panic_hook",
@@ -36,11 +38,13 @@ flate2 = "1.0"
 log = "0.4"
 
 # Server-side dependenceis
+actix = { version = "0.8", optional = true }
+actix-web = { version = "1.0", optional = true }
+actix-web-actors = { version = "1.0", optional = true }
+actix-files = { version = "0.1", optional = true }
 futures = { version = "0.1", optional = true }
-futures-locks = { version = "0.3", optional = true }
 pretty_env_logger = { version = "0.3", optional = true }
-tokio = { version = "0.1", optional = true }
-warp = { version = "0.1", optional = true }
+tokio-io = { version = "0.1", optional = true }
 
 # Client-side dependencies
 console_error_panic_hook = { version = "0.1.1", optional = true }

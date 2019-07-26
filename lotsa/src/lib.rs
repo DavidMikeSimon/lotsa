@@ -1,4 +1,4 @@
-#![feature(test)]
+//#![feature(test)]
 #![warn(unused)]
 #![warn(future_incompatible)]
 #![warn(clippy::all)]
