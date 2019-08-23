@@ -5,5 +5,14 @@ services:
     working_dir: /app
     volumes:
       - .:/app
+      - cargo-common:/cargo-common
+      - cargo-lotsa:/cargo-lotsa
+    environment:
+      - CARGO_HOME=/cargo-common
+      - CARGO_TARGET_DIR=/cargo-lotsa
     ports:
       - "8000:8000"
+
+volumes:
+  cargo-common:
+  cargo-lotsa:
