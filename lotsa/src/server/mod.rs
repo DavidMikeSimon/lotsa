@@ -206,7 +206,7 @@ impl Server {
         .service(fs::Files::new("/pkg/", "pkg/"))
         .service(fs::Files::new("/", "www/").index_file("index.html"))
     })
-    .bind("127.0.0.1:8088")?
+    .bind("0.0.0.0:8000")?
     .start();
 
     sys.run()

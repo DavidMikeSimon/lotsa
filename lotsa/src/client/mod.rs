@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use js_sys::{ArrayBuffer, JsString, Uint8Array};
 use wasm_bindgen::{prelude::*, JsCast};
-use web_sys::{BinaryType, CanvasRenderingContext2d, HtmlCanvasElement, MessageEvent, WebSocket};
+use web_sys::{BinaryType, CanvasRenderingContext2d, HtmlCanvasElement, MessageEvent, Url, WebSocket};
 
 use crate::{
   block::{EMPTY, UNKNOWN},
@@ -61,10 +61,16 @@ const GRID: f64 = 2.0;
 
 impl LotsaClient {
   pub fn new() -> LotsaClient {
-    let ws = WebSocket::new("ws://localhost:8088/ws/").expect("network is reliable"); // TODO
+    let window = web_sys::window().expect("dom window must exist");
+    let document = window.document().expect("dom document must exist");
+
+    let url = Url::new(&document.url().expect("dom document must have url")).expect("url is valid");
+    let ws_url = format!("ws://{}/ws/", url.host());
+    info!("websocket url {}", ws_url);
+
+    let ws = WebSocket::new(&ws_url).expect("network is reliable"); // TODO
     ws.set_binary_type(BinaryType::Arraybuffer);
 
-    let window = web_sys::window().expect("dom window must exist");
     let canvas_height = window
       .inner_height()
       .expect("dom window must have height")
@@ -72,9 +78,7 @@ impl LotsaClient {
       .expect("dom window height must be numeric") as u32;
     let canvas_width = canvas_height;
 
-    let canvas = window
-      .document()
-      .expect("dom document must exist")
+    let canvas = document
       .get_element_by_id("main")
       .expect("main element must exist")
       .dyn_into::<HtmlCanvasElement>()

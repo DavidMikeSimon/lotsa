@@ -1,0 +1,9 @@
+version: "3.7"
+services:
+  dev:
+    build: lotsa-game-template
+    working_dir: /app
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
