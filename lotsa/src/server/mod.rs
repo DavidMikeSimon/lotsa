@@ -15,13 +15,13 @@ struct ClientMessage {}
 
 #[derive(Debug, Message)]
 struct ServerMessage {
-  bytes: Vec<u8>
+  bytes: Vec<u8>,
 }
 
 type SessionId = usize;
 
 struct ClientConnected {
-  session: Addr<WebsocketSession>
+  session: Addr<WebsocketSession>,
 }
 
 impl Message for ClientConnected {
@@ -35,7 +35,7 @@ struct World {
   chunk: Chunk,
   sim: Simulator,
   next_id: usize,
-  sessions: HashMap<usize, Addr<WebsocketSession>>
+  sessions: HashMap<usize, Addr<WebsocketSession>>,
 }
 
 impl World {
@@ -57,7 +57,12 @@ impl World {
     let mut sim = Simulator::new();
     life::init(&mut sim);
 
-    World { chunk, sim, next_id: 1, sessions: HashMap::new() }
+    World {
+      chunk,
+      sim,
+      next_id: 1,
+      sessions: HashMap::new(),
+    }
   }
 
   fn encode_chunk_and_step(&mut self) -> Vec<u8> {
@@ -106,10 +111,14 @@ impl Handler<Tick> for World {
 
   fn handle(&mut self, _msg: Tick, ctx: &mut Context<Self>) {
     let bytes = self.encode_chunk_and_step();
-    
+
     for (_id, session) in self.sessions.iter() {
       // FIXME: Probably inefficient to clone the vec
-      session.try_send(ServerMessage { bytes: bytes.clone() }).expect("send message to client session");
+      session
+        .try_send(ServerMessage {
+          bytes: bytes.clone(),
+        })
+        .expect("send message to client session");
     }
   }
 }
@@ -121,7 +130,10 @@ struct WebsocketSession {
 
 impl WebsocketSession {
   fn new(web_common: WebCommon) -> WebsocketSession {
-    WebsocketSession { id: None, web_common }
+    WebsocketSession {
+      id: None,
+      web_common,
+    }
   }
 }
 
@@ -133,12 +145,14 @@ impl Actor for WebsocketSession {
     self
       .web_common
       .world
-      .send(ClientConnected { session: ctx.address() })
+      .send(ClientConnected {
+        session: ctx.address(),
+      })
       .into_actor(self)
       .then(|res, act, ctx| {
         match res {
           Ok(id) => act.id = Some(id),
-          _ => ctx.stop()
+          _ => ctx.stop(),
         }
         fut::ok(())
       })

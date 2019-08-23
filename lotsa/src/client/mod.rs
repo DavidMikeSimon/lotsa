@@ -2,7 +2,9 @@ use std::rc::Rc;
 
 use js_sys::{ArrayBuffer, JsString, Uint8Array};
 use wasm_bindgen::{prelude::*, JsCast};
-use web_sys::{BinaryType, CanvasRenderingContext2d, HtmlCanvasElement, MessageEvent, Url, WebSocket};
+use web_sys::{
+  BinaryType, CanvasRenderingContext2d, HtmlCanvasElement, MessageEvent, Url, WebSocket,
+};
 
 use crate::{
   block::{EMPTY, UNKNOWN},
