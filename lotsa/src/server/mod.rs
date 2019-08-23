@@ -1,4 +1,9 @@
-use std::{collections::HashMap, io::Write, time::Duration};
+use std::{
+  collections::{HashMap, VecDeque},
+  convert::TryInto,
+  io::Write,
+  time::{Duration, Instant},
+};
 
 use actix::prelude::*;
 use actix::*;
@@ -35,6 +40,7 @@ struct World {
   chunk: Chunk,
   sim: Simulator,
   next_id: usize,
+  step_durations: VecDeque<Duration>,
   sessions: HashMap<usize, Addr<WebsocketSession>>,
 }
 
@@ -61,6 +67,7 @@ impl World {
       chunk,
       sim,
       next_id: 1,
+      step_durations: VecDeque::new(),
       sessions: HashMap::new(),
     }
   }
@@ -110,8 +117,9 @@ impl Handler<Tick> for World {
   type Result = ();
 
   fn handle(&mut self, _msg: Tick, ctx: &mut Context<Self>) {
-    let bytes = self.encode_chunk_and_step();
+    let step_start = Instant::now();
 
+    let bytes = self.encode_chunk_and_step();
     for (_id, session) in self.sessions.iter() {
       // FIXME: Probably inefficient to clone the vec
       session
@@ -119,6 +127,18 @@ impl Handler<Tick> for World {
           bytes: bytes.clone(),
         })
         .expect("send message to client session");
+    }
+
+    self.step_durations.push_back(step_start.elapsed());
+    let durations_len: u32 = self
+      .step_durations
+      .len()
+      .try_into()
+      .expect("small number of durations");
+    if durations_len >= 50 {
+      let total_duration: Duration = self.step_durations.drain(..).sum();
+      let avg_duration: Duration = total_duration / durations_len;
+      info!("average step duration: {}ms", avg_duration.as_millis());
     }
   }
 }
