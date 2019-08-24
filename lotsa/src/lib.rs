@@ -28,6 +28,7 @@ pub mod chunk;
 pub mod debug;
 pub mod life;
 pub mod point;
+pub mod query;
 pub mod sim;
 
 #[cfg(feature = "client")]

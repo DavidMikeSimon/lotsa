@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
   block::{BlockType, UNKNOWN},
+  query::BlockView,
   point::Point,
 };
 
@@ -49,9 +50,8 @@ impl Chunk {
     }
   }
 
-  pub fn get_block(&self, pos: Point) -> BlockView<'_> {
+  pub fn get_block(&self, pos: Point) -> BlockView {
     BlockView {
-      chunk: self,
       block_type: self.block_types[pos],
       pos,
     }
@@ -115,9 +115,9 @@ impl<'a> ChunkBlocksIterator<'a> {
 }
 
 impl<'a> Iterator for ChunkBlocksIterator<'a> {
-  type Item = BlockView<'a>;
+  type Item = BlockView;
 
-  fn next(&mut self) -> Option<BlockView<'a>> {
+  fn next(&mut self) -> Option<BlockView> {
     if self.done {
       return None;
     }
@@ -136,6 +136,8 @@ impl<'a> FusedIterator for ChunkBlocksIterator<'a> {}
 #[cfg(test)]
 mod tests {
   use super::*;
+  // TODO: Conditionally enable benchmarks with:
+  // https://stackoverflow.com/questions/37674758/ignore-benchmarks-when-using-stable-beta
   //use test::Bencher;
 
   const COBBLE: BlockType = BlockType(37);
@@ -231,23 +233,5 @@ mod tests {
     c.set_block_type(Point::new(2, 2, 0), COBBLE);
     c.set_block_type(Point::new(3, 3, 0), COBBLE);
     c
-  }
-}
-
-#[derive(Clone, Copy)]
-pub struct BlockView<'a> {
-  #[allow(dead_code)] // FIXME
-  chunk: &'a Chunk,
-  pub block_type: BlockType,
-  pub pos: Point,
-}
-
-impl<'a> BlockView<'a> {
-  pub fn block_type(&self) -> BlockType {
-    self.block_type
-  }
-
-  pub fn pos(&self) -> Point {
-    self.pos
   }
 }
