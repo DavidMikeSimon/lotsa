@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::{
   block::{BlockType, EMPTY, UNKNOWN},
   chunk::Chunk,
-  point::Point,
+  chunk_pos::ChunkPos,
 };
 
 pub struct Debugger {
@@ -27,22 +27,21 @@ impl Debugger {
     }
   }
 
-  pub fn bounds(&self, c: &Chunk) -> Point {
-    let mut r = Point::new(0, 0, 0);
+  pub fn bounds(&self, c: &Chunk) -> ChunkPos {
+    let mut r = ChunkPos::new(0, 0, 0);
 
-    for block in c
+    for (p, _) in c
       .blocks_iter()
-      .filter(|b| b.block_type() != EMPTY && b.block_type() != UNKNOWN)
+      .filter(|(_, b)| b.block_type() != EMPTY && b.block_type() != UNKNOWN)
     {
-      let p = block.pos();
       if p.x() > r.x() {
-        r = Point::new(p.x(), r.y(), r.z())
+        r = ChunkPos::new(p.x(), r.y(), r.z())
       }
       if p.y() > r.y() {
-        r = Point::new(r.x(), p.y(), r.z())
+        r = ChunkPos::new(r.x(), p.y(), r.z())
       }
       if p.z() > r.z() {
-        r = Point::new(r.x(), r.y(), p.z())
+        r = ChunkPos::new(r.x(), r.y(), p.z())
       }
     }
 
@@ -58,7 +57,7 @@ impl Debugger {
     let mut s = String::new();
     for y in 0..=bounds.y() {
       for x in 0..=bounds.x() {
-        let block = c.get_block(Point::new(x, y, 0));
+        let block = c.get_block(ChunkPos::new(x, y, 0));
         let chr = self.block_type_chars[&block.block_type()];
         s.push(chr);
       }
@@ -80,7 +79,7 @@ impl Debugger {
         }
         _ => {
           let bt = self.char_block_types[&chr];
-          c.set_block_type(Point::new(x, y, 0), bt);
+          c.set_block_type(ChunkPos::new(x, y, 0), bt);
           x += 1;
         }
       }
@@ -105,7 +104,6 @@ mod tests {
   use crate::{
     block::{EMPTY, UNKNOWN},
     chunk::Chunk,
-    point::Point,
   };
 
   const COBBLE: BlockType = BlockType(37);
@@ -118,10 +116,10 @@ mod tests {
   fn test_get_bounds() {
     let debugger = build_debugger();
     let mut c = Chunk::new();
-    c.set_block_type(Point::new(1, 1, 1), COBBLE);
-    c.set_block_type(Point::new(1, 4, 2), COBBLE);
-    c.set_block_type(Point::new(1, 2, 3), COBBLE);
-    assert_eq!(debugger.bounds(&c), Point::new(1, 4, 3));
+    c.set_block_type(ChunkPos::new(1, 1, 1), COBBLE);
+    c.set_block_type(ChunkPos::new(1, 4, 2), COBBLE);
+    c.set_block_type(ChunkPos::new(1, 2, 3), COBBLE);
+    assert_eq!(debugger.bounds(&c), ChunkPos::new(1, 4, 3));
   }
 
   #[test]
@@ -130,12 +128,12 @@ mod tests {
     let mut c = Chunk::new();
     for x in 0..6 {
       for y in 0..6 {
-        c.set_block_type(Point::new(x, y, 0), EMPTY);
+        c.set_block_type(ChunkPos::new(x, y, 0), EMPTY);
       }
     }
-    c.set_block_type(Point::new(1, 1, 0), COBBLE);
-    c.set_block_type(Point::new(2, 3, 0), COBBLE);
-    c.set_block_type(Point::new(4, 2, 0), COBBLE);
+    c.set_block_type(ChunkPos::new(1, 1, 0), COBBLE);
+    c.set_block_type(ChunkPos::new(2, 3, 0), COBBLE);
+    c.set_block_type(ChunkPos::new(4, 2, 0), COBBLE);
 
     debugger.assert_match(
       &c,
@@ -159,14 +157,14 @@ mod tests {
        C....",
     );
 
-    assert_eq!(c.get_block(Point::new(0, 0, 0)).block_type(), EMPTY);
-    assert_eq!(c.get_block(Point::new(0, 0, 1)).block_type(), UNKNOWN);
-    assert_eq!(c.get_block(Point::new(15, 0, 0)).block_type(), UNKNOWN);
-    assert_eq!(c.get_block(Point::new(1, 1, 0)).block_type(), COBBLE);
-    assert_eq!(c.get_block(Point::new(2, 1, 0)).block_type(), COBBLE);
-    assert_eq!(c.get_block(Point::new(1, 2, 0)).block_type(), EMPTY);
-    assert_eq!(c.get_block(Point::new(2, 2, 0)).block_type(), COBBLE);
-    assert_eq!(c.get_block(Point::new(0, 3, 0)).block_type(), COBBLE);
+    assert_eq!(c.get_block(ChunkPos::new(0, 0, 0)).block_type(), EMPTY);
+    assert_eq!(c.get_block(ChunkPos::new(0, 0, 1)).block_type(), UNKNOWN);
+    assert_eq!(c.get_block(ChunkPos::new(15, 0, 0)).block_type(), UNKNOWN);
+    assert_eq!(c.get_block(ChunkPos::new(1, 1, 0)).block_type(), COBBLE);
+    assert_eq!(c.get_block(ChunkPos::new(2, 1, 0)).block_type(), COBBLE);
+    assert_eq!(c.get_block(ChunkPos::new(1, 2, 0)).block_type(), EMPTY);
+    assert_eq!(c.get_block(ChunkPos::new(2, 2, 0)).block_type(), COBBLE);
+    assert_eq!(c.get_block(ChunkPos::new(0, 3, 0)).block_type(), COBBLE);
 
     debugger.assert_match(
       &c,

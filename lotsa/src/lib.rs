@@ -25,9 +25,9 @@ extern crate serde_big_array;
 
 pub mod block;
 pub mod chunk;
+pub mod chunk_pos;
 pub mod debug;
 pub mod life;
-pub mod point;
 pub mod query;
 pub mod sim;
 

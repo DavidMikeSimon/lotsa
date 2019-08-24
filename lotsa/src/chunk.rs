@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
   block::{BlockType, UNKNOWN},
-  point::Point,
+  chunk_pos::ChunkPos,
   query::BlockView,
 };
 
@@ -19,21 +19,21 @@ big_array! { BigArray; CHUNK_WIDTH_E3, }
 
 type BlockTypesArray = [BlockType; CHUNK_WIDTH_E3 as usize];
 
-impl Index<Point> for BlockTypesArray {
+impl Index<ChunkPos> for BlockTypesArray {
   type Output = BlockType;
 
-  fn index(&self, pos: Point) -> &BlockType {
+  fn index(&self, pos: ChunkPos) -> &BlockType {
     self
       .get(pos.raw_n() as usize)
-      .expect("Point always has valid index")
+      .expect("ChunkPos always has valid index")
   }
 }
 
-impl IndexMut<Point> for BlockTypesArray {
-  fn index_mut(&mut self, pos: Point) -> &mut BlockType {
+impl IndexMut<ChunkPos> for BlockTypesArray {
+  fn index_mut(&mut self, pos: ChunkPos) -> &mut BlockType {
     self
       .get_mut(pos.raw_n() as usize)
-      .expect("Point always has valid index")
+      .expect("ChunkPos always has valid index")
   }
 }
 
@@ -50,14 +50,13 @@ impl Chunk {
     }
   }
 
-  pub fn get_block(&self, pos: Point) -> BlockView {
+  pub fn get_block(&self, pos: ChunkPos) -> BlockView {
     BlockView {
-      block_type: self.block_types[pos],
-      pos,
+      block_type: self.block_types[pos]
     }
   }
 
-  pub fn set_block_type(&mut self, pos: Point, block_type: BlockType) {
+  pub fn set_block_type(&mut self, pos: ChunkPos, block_type: BlockType) {
     self.block_types[pos] = block_type;
   }
 
@@ -69,7 +68,7 @@ impl Chunk {
     ChunkBlocksIterator::new(self)
   }
 
-  pub fn neighbor_types(&self, pos: Point) -> Vec<BlockType> {
+  pub fn neighbor_types(&self, pos: ChunkPos) -> Vec<BlockType> {
     let mut r = Vec::new();
 
     for &y_offset in [-1, 0, 1].iter() {
@@ -81,7 +80,7 @@ impl Chunk {
           }
           let tgt_x = pos.x() as isize + x_offset;
           if tgt_x >= 0 && tgt_x <= 15 {
-            let neighbor_pos = Point::new(tgt_x as u8, tgt_y as u8, pos.z());
+            let neighbor_pos = ChunkPos::new(tgt_x as u8, tgt_y as u8, pos.z());
             r.push(self.get_block(neighbor_pos).block_type);
           }
         }
@@ -100,7 +99,7 @@ impl Default for Chunk {
 
 pub struct ChunkBlocksIterator<'a> {
   chunk: &'a Chunk,
-  pos: Point,
+  pos: ChunkPos,
   done: bool,
 }
 
@@ -108,26 +107,27 @@ impl<'a> ChunkBlocksIterator<'a> {
   fn new(chunk: &'a Chunk) -> ChunkBlocksIterator<'_> {
     ChunkBlocksIterator {
       chunk,
-      pos: Point::new(0, 0, 0),
+      pos: ChunkPos::new(0, 0, 0),
       done: false,
     }
   }
 }
 
 impl<'a> Iterator for ChunkBlocksIterator<'a> {
-  type Item = BlockView;
+  type Item = (ChunkPos, BlockView);
 
-  fn next(&mut self) -> Option<BlockView> {
+  fn next(&mut self) -> Option<(ChunkPos, BlockView)> {
     if self.done {
       return None;
     }
 
     let block = self.chunk.get_block(self.pos);
+    let result = Some((self.pos, block));
     let incremented = self.pos.increment();
     if !incremented {
       self.done = true;
     }
-    Some(block)
+    result
   }
 }
 
@@ -145,15 +145,14 @@ mod tests {
   #[test]
   fn test_get_block() {
     let c = Chunk::new();
-    let block = c.get_block(Point::new(1, 2, 3));
+    let block = c.get_block(ChunkPos::new(1, 2, 3));
     assert_eq!(block.block_type(), UNKNOWN);
-    assert_eq!(block.pos(), Point::new(1, 2, 3));
   }
 
   #[test]
   fn test_set_block_type() {
     let mut c = Chunk::new();
-    let p = Point::new(0, 0, 0);
+    let p = ChunkPos::new(0, 0, 0);
     assert_eq!(c.get_block(p).block_type, UNKNOWN);
     c.set_block_type(p, COBBLE);
     assert_eq!(c.get_block(p).block_type, COBBLE);
@@ -162,7 +161,7 @@ mod tests {
   #[test]
   fn test_fill_with_block_type() {
     let mut c = Chunk::new();
-    let p = Point::new(4, 5, 6);
+    let p = ChunkPos::new(4, 5, 6);
     assert_eq!(c.get_block(p).block_type, UNKNOWN);
     c.fill_with_block_type(COBBLE);
     assert_eq!(c.get_block(p).block_type, COBBLE);
@@ -172,10 +171,10 @@ mod tests {
   fn test_blocks_iter() {
     let c = three_cobble_chunk();
 
-    let mut iter = c.blocks_iter().filter(|b| b.block_type == COBBLE);
-    assert_eq!(iter.next().unwrap().pos(), Point::new(1, 1, 0));
-    assert_eq!(iter.next().unwrap().pos(), Point::new(2, 2, 0));
-    assert_eq!(iter.next().unwrap().pos(), Point::new(3, 3, 0));
+    let mut iter = c.blocks_iter().filter(|(_, b)| b.block_type == COBBLE);
+    assert_eq!(iter.next().unwrap().0, ChunkPos::new(1, 1, 0));
+    assert_eq!(iter.next().unwrap().0, ChunkPos::new(2, 2, 0));
+    assert_eq!(iter.next().unwrap().0, ChunkPos::new(3, 3, 0));
     assert!(iter.next().is_none());
   }
 
@@ -184,30 +183,30 @@ mod tests {
     let c = three_cobble_chunk();
 
     assert_eq!(
-      c.neighbor_types(Point::new(2, 2, 0)),
+      c.neighbor_types(ChunkPos::new(2, 2, 0)),
       vec![COBBLE, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, COBBLE]
     );
 
     assert_eq!(
-      c.neighbor_types(Point::new(9, 9, 0)),
+      c.neighbor_types(ChunkPos::new(9, 9, 0)),
       vec![UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN]
     );
 
     // Top left corner
     assert_eq!(
-      c.neighbor_types(Point::new(0, 0, 0)),
+      c.neighbor_types(ChunkPos::new(0, 0, 0)),
       vec![UNKNOWN, UNKNOWN, COBBLE]
     );
 
     // Top side
     assert_eq!(
-      c.neighbor_types(Point::new(1, 0, 0)),
+      c.neighbor_types(ChunkPos::new(1, 0, 0)),
       vec![UNKNOWN, UNKNOWN, UNKNOWN, COBBLE, UNKNOWN]
     );
 
     // Left side
     assert_eq!(
-      c.neighbor_types(Point::new(0, 1, 0)),
+      c.neighbor_types(ChunkPos::new(0, 1, 0)),
       vec![UNKNOWN, UNKNOWN, COBBLE, UNKNOWN, UNKNOWN]
     );
   }
@@ -229,9 +228,9 @@ mod tests {
 
   fn three_cobble_chunk() -> Chunk {
     let mut c = Chunk::new();
-    c.set_block_type(Point::new(1, 1, 0), COBBLE);
-    c.set_block_type(Point::new(2, 2, 0), COBBLE);
-    c.set_block_type(Point::new(3, 3, 0), COBBLE);
+    c.set_block_type(ChunkPos::new(1, 1, 0), COBBLE);
+    c.set_block_type(ChunkPos::new(2, 2, 0), COBBLE);
+    c.set_block_type(ChunkPos::new(3, 3, 0), COBBLE);
     c
   }
 }

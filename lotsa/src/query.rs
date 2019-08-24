@@ -1,20 +1,15 @@
-use std::{iter, marker::PhantomData};
+use std::marker::PhantomData;
 
-use crate::{block::BlockType, point::Point};
+use crate::{block::BlockType};
 
 #[derive(Clone, Copy)]
 pub struct BlockView {
-  pub block_type: BlockType,
-  pub pos: Point,
+  pub block_type: BlockType
 }
 
 impl BlockView {
   pub fn block_type(&self) -> BlockType {
     self.block_type
-  }
-
-  pub fn pos(&self) -> Point {
-    self.pos
   }
 }
 
@@ -64,16 +59,14 @@ where
 #[cfg(test)]
 mod tests {
   use super::*;
+  use std::iter;
 
   const COBBLE: BlockType = BlockType(37);
 
   #[test]
   fn test_count_one() {
     let blocks = TestBlocks::new(&|| {
-      iter::once(BlockView {
-        block_type: COBBLE,
-        pos: Point::new(1, 2, 3),
-      })
+      iter::once(BlockView { block_type: COBBLE })
     });
     let count = Count::new(blocks);
     assert_eq!(count.eval(), 1);

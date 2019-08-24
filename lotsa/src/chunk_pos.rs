@@ -1,11 +1,11 @@
 use crate::chunk::{CHUNK_WIDTH, CHUNK_WIDTH_E2, CHUNK_WIDTH_E3};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Point {
+pub struct ChunkPos {
   n: u16,
 }
 
-impl Point {
+impl ChunkPos {
   pub fn new(x: u8, y: u8, z: u8) -> Self {
     if x >= CHUNK_WIDTH {
       panic!("x is out of range")
@@ -16,7 +16,7 @@ impl Point {
     if z >= CHUNK_WIDTH {
       panic!("z is out of range")
     }
-    Point {
+    ChunkPos {
       n: ((x as usize) * CHUNK_WIDTH_E2 + (y as usize) * (CHUNK_WIDTH as usize) + (z as usize))
         as u16,
     }
@@ -57,22 +57,22 @@ mod tests {
 
   #[test]
   fn test_point_splitting() {
-    let p = Point::new(0, 0, 0);
+    let p = ChunkPos::new(0, 0, 0);
     assert_eq!(p.x(), 0);
     assert_eq!(p.y(), 0);
     assert_eq!(p.z(), 0);
 
-    let p = Point::new(1, 2, 3);
+    let p = ChunkPos::new(1, 2, 3);
     assert_eq!(p.x(), 1);
     assert_eq!(p.y(), 2);
     assert_eq!(p.z(), 3);
 
-    let p = Point::new(8, 9, 7);
+    let p = ChunkPos::new(8, 9, 7);
     assert_eq!(p.x(), 8);
     assert_eq!(p.y(), 9);
     assert_eq!(p.z(), 7);
 
-    let p = Point::new(15, 15, 15);
+    let p = ChunkPos::new(15, 15, 15);
     assert_eq!(p.x(), 15);
     assert_eq!(p.y(), 15);
     assert_eq!(p.z(), 15);

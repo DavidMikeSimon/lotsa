@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{block::BlockType, chunk::Chunk, point::Point};
+use crate::{block::BlockType, chunk::Chunk, chunk_pos::ChunkPos};
 
 type UpdaterFn = fn(BlockType, &[BlockType]) -> Option<BlockType>;
 
@@ -10,7 +10,7 @@ pub struct Simulator {
 
 #[derive(Clone, Copy, Debug)]
 struct BlockTypeUpdate {
-  pos: Point,
+  pos: ChunkPos,
   block_type: BlockType,
 }
 
@@ -32,13 +32,13 @@ impl Simulator {
   pub fn step(&self, chunk: &mut Chunk) {
     let mut updates: Vec<BlockTypeUpdate> = Vec::new();
 
-    for block in chunk.blocks_iter() {
+    for (pos, block) in chunk.blocks_iter() {
       if let Some(updaters) = self.updaters.get(&block.block_type) {
         for updater in updaters {
-          if let Some(new_block_type) = updater(block.block_type, &chunk.neighbor_types(block.pos))
+          if let Some(new_block_type) = updater(block.block_type, &chunk.neighbor_types(pos))
           {
             updates.push(BlockTypeUpdate {
-              pos: block.pos,
+              pos,
               block_type: new_block_type,
             });
           }
