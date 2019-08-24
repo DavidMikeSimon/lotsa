@@ -7,8 +7,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
   block::{BlockType, UNKNOWN},
-  query::BlockView,
   point::Point,
+  query::BlockView,
 };
 
 pub const CHUNK_WIDTH: u8 = 32;
@@ -212,20 +212,20 @@ mod tests {
     );
   }
 
-/*
- *   #[bench]
- *   fn bench_get_blocks(b: &mut Bencher) {
- *     let c = three_cobble_chunk();
- * 
- *     b.iter(|| {
- *       let mut iter = c.blocks_iter().filter(|b| b.block_type == COBBLE);
- *       iter.next();
- *       iter.next();
- *       iter.next();
- *       iter.next();
- *     });
- *   }
- */
+  /*
+   *   #[bench]
+   *   fn bench_get_blocks(b: &mut Bencher) {
+   *     let c = three_cobble_chunk();
+   *
+   *     b.iter(|| {
+   *       let mut iter = c.blocks_iter().filter(|b| b.block_type == COBBLE);
+   *       iter.next();
+   *       iter.next();
+   *       iter.next();
+   *       iter.next();
+   *     });
+   *   }
+   */
 
   fn three_cobble_chunk() -> Chunk {
     let mut c = Chunk::new();
