@@ -1,8 +1,9 @@
+use std::cmp::max;
 use std::marker::PhantomData;
 
 use crate::block::BlockType;
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct BlockInfo {
   pub block_type: BlockType,
 }
@@ -30,8 +31,84 @@ pub trait Context {
   fn get_block(&self, pos: RelativePos) -> BlockInfo;
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Cacheability {
+  DontCache,
+  Forever,
+  UntilChangeInSelf {
+    fields: Vec<CacheableField>,
+  },
+  UntilChangeInChebyshevNeighborhood {
+    distance: u8,
+    fields: Vec<CacheableField>,
+  },
+}
+
+use Cacheability::*;
+
+#[derive(Copy, Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
+pub enum CacheableField {
+  CacheableBlockType,
+}
+
+use CacheableField::*;
+
+const NO_FIELDS: &[CacheableField] = &[];
+const ALL_FIELDS: &[CacheableField] = &[CacheableBlockType];
+
+impl CacheableField {
+  fn merge(a: &[CacheableField], b: &[CacheableField]) -> Vec<CacheableField> {
+    let mut new_fields = Vec::new();
+    new_fields.extend_from_slice(a);
+    new_fields.extend_from_slice(b);
+    new_fields.sort_unstable();
+    new_fields.dedup();
+    new_fields
+  }
+}
+
+impl Cacheability {
+  pub fn intersection(a: &Cacheability, b: &Cacheability) -> Cacheability {
+    match (a, b) {
+      (DontCache, _) => DontCache,
+      (_, DontCache) => DontCache,
+      (Forever, _) => b.clone(),
+      (_, Forever) => a.clone(),
+      (UntilChangeInSelf { fields: fields_a }, UntilChangeInSelf { fields: fields_b }) => {
+        UntilChangeInSelf {
+          fields: CacheableField::merge(fields_a, fields_b),
+        }
+      }
+      (_, _) => UntilChangeInChebyshevNeighborhood {
+        distance: max(a.distance(), b.distance()),
+        fields: CacheableField::merge(a.fields(), b.fields()),
+      },
+    }
+  }
+
+  pub fn distance(&self) -> u8 {
+    match self {
+      UntilChangeInChebyshevNeighborhood { distance, .. } => *distance,
+      _ => 0,
+    }
+  }
+
+  pub fn fields(&self) -> &[CacheableField] {
+    match self {
+      DontCache => ALL_FIELDS,
+      Forever => NO_FIELDS,
+      UntilChangeInSelf { fields } => &fields,
+      UntilChangeInChebyshevNeighborhood { fields, .. } => &fields,
+    }
+  }
+}
+
 pub trait Expr<'a, T> {
   fn eval(&self, n: &'a Context, pos: RelativePos) -> T;
+
+  fn cacheability(&self) -> Cacheability {
+    DontCache
+  }
 }
 
 pub struct GetBlockType {}
@@ -42,9 +119,21 @@ impl GetBlockType {
   }
 }
 
+impl Default for GetBlockType {
+  fn default() -> GetBlockType {
+    GetBlockType::new()
+  }
+}
+
 impl<'a> Expr<'a, BlockType> for GetBlockType {
   fn eval(&self, n: &'a Context, pos: RelativePos) -> BlockType {
     n.get_block(pos).block_type
+  }
+
+  fn cacheability(&self) -> Cacheability {
+    UntilChangeInSelf {
+      fields: vec![CacheableBlockType],
+    }
   }
 }
 
@@ -70,6 +159,10 @@ where
 {
   fn eval(&self, _n: &'a Context, _pos: RelativePos) -> T {
     self.value
+  }
+
+  fn cacheability(&self) -> Cacheability {
+    Forever
   }
 }
 
@@ -103,13 +196,17 @@ where
   fn eval(&self, n: &'a Context, pos: RelativePos) -> bool {
     self.left.eval(n, pos) == self.right.eval(n, pos)
   }
+
+  fn cacheability(&self) -> Cacheability {
+    Cacheability::intersection(&self.left.cacheability(), &self.right.cacheability())
+  }
 }
 
 pub struct Chebyshev2DNeighbors<'a, T, E>
 where
   E: Expr<'a, T>,
 {
-  distance: i8,
+  distance: u8,
   map_expr: &'a E,
   phantom: PhantomData<T>,
 }
@@ -119,8 +216,11 @@ where
   E: Expr<'a, T>,
 {
   pub fn new(distance: u8, map_expr: &'a E) -> Chebyshev2DNeighbors<'a, T, E> {
+    if distance > 127 {
+      panic!("Distance must be <= 127")
+    }
     Chebyshev2DNeighbors {
-      distance: distance as i8,
+      distance,
       map_expr,
       phantom: PhantomData,
     }
@@ -134,14 +234,24 @@ where
   fn eval(&self, n: &'a Context, pos: RelativePos) -> Box<Iterator<Item = T> + 'a> {
     let distance = self.distance;
     let map_expr = self.map_expr;
-    Box::new((-distance..=distance).flat_map(move |y_offset| {
-      (-distance..=distance).map(move |x_offset| {
-        map_expr.eval(
-          n,
-          RelativePos::new(x_offset + pos.x, y_offset + pos.y, pos.z),
-        )
-      })
-    }))
+    Box::new(
+      (-(distance as i8)..=(distance as i8)).flat_map(move |y_offset| {
+        (-(distance as i8)..=(distance as i8)).map(move |x_offset| {
+          map_expr.eval(
+            n,
+            RelativePos::new(x_offset + pos.x, y_offset + pos.y, pos.z),
+          )
+        })
+      }),
+    )
+  }
+
+  fn cacheability(&self) -> Cacheability {
+    let map_expr_cacheability = self.map_expr.cacheability();
+    UntilChangeInChebyshevNeighborhood {
+      distance: self.distance + map_expr_cacheability.distance(),
+      fields: map_expr_cacheability.fields().to_vec(),
+    }
   }
 }
 
@@ -224,6 +334,8 @@ mod tests {
         .collect::<Vec<bool>>()
     );
   }
+
+  // TODO next: Write tests for cacheability
 
   struct TestContext {}
 

@@ -134,8 +134,7 @@ impl LotsaClient {
     let cell_height: f64 =
       ((self.canvas_height as f64 - GRID) / (CHUNK_WIDTH as f64) - GRID) as f64;
 
-    for block in chunk.blocks_iter() {
-      let pos = block.pos();
+    for (pos, block) in chunk.blocks_iter() {
       if pos.z() > 0 {
         continue;
       }

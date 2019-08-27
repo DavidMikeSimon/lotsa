@@ -120,14 +120,6 @@ impl Handler<Tick> for World {
     let step_start = Instant::now();
 
     let bytes = self.encode_chunk_and_step();
-    for (_id, session) in self.sessions.iter() {
-      // FIXME: Probably inefficient to clone the vec
-      session
-        .try_send(ServerMessage {
-          bytes: bytes.clone(),
-        })
-        .expect("send message to client session");
-    }
 
     self.step_durations.push_back(step_start.elapsed());
     let durations_len: u32 = self
@@ -139,6 +131,15 @@ impl Handler<Tick> for World {
       let total_duration: Duration = self.step_durations.drain(..).sum();
       let avg_duration: Duration = total_duration / durations_len;
       info!("average step duration: {}ms", avg_duration.as_millis());
+    }
+
+    for (_id, session) in self.sessions.iter() {
+      // FIXME: Probably inefficient to clone the vec
+      session
+        .try_send(ServerMessage {
+          bytes: bytes.clone(),
+        })
+        .expect("send message to client session");
     }
   }
 }
