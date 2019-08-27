@@ -27,14 +27,7 @@ impl RelativePos {
 }
 
 pub trait Context {
-  fn get_neighbor_block(&self, pos: RelativePos) -> BlockInfo;
-}
-
-pub trait Area<I>
-where
-  I: Iterator<Item = RelativePos>,
-{
-  fn offsets(&self) -> Box<Iterator<Item = RelativePos>>;
+  fn get_block(&self, pos: RelativePos) -> BlockInfo;
 }
 
 pub trait Expr<T> {
@@ -51,7 +44,7 @@ impl GetBlockType {
 
 impl Expr<BlockType> for GetBlockType {
   fn eval(&self, n: &Context, pos: RelativePos) -> BlockType {
-    n.get_neighbor_block(pos).block_type
+    n.get_block(pos).block_type
   }
 }
 
@@ -80,7 +73,7 @@ where
   }
 }
 
-pub struct Equals<'a, T: PartialEq, L: Expr<T> + 'a, R: Expr<T> + 'a> {
+pub struct Equals<'a, T: PartialEq, L: Expr<T>, R: Expr<T>> {
   left: &'a L,
   right: &'a R,
   phantom: PhantomData<T>
@@ -89,8 +82,8 @@ pub struct Equals<'a, T: PartialEq, L: Expr<T> + 'a, R: Expr<T> + 'a> {
 impl<'a, T, L, R> Equals<'a, T, L, R>
 where
   T: PartialEq,
-  L: Expr<T> + 'a,
-  R: Expr<T> + 'a,
+  L: Expr<T>,
+  R: Expr<T>,
 {
   pub fn new(left: &'a L, right: &'a R) -> Equals<'a, T, L, R> {
     Equals { left, right, phantom: PhantomData }
@@ -100,11 +93,37 @@ where
 impl<'a, T, L, R> Expr<bool> for Equals<'a, T, L, R>
 where
   T: PartialEq,
-  L: Expr<T> + 'a,
-  R: Expr<T> + 'a,
+  L: Expr<T>,
+  R: Expr<T>,
 {
   fn eval(&self, n: &Context, pos: RelativePos) -> bool {
     self.left.eval(n, pos) == self.right.eval(n, pos)
+  }
+}
+
+pub struct Chebyshev2DNeighbors<'a, T> {
+  distance: i8,
+  map_expr: &'a Expr<T>,
+}
+
+impl<'a, T> Chebyshev2DNeighbors<'a, T> {
+  pub fn new(distance: u8, map_expr: &'a Expr<T>) -> Chebyshev2DNeighbors<'a, T> {
+    Chebyshev2DNeighbors { distance: distance as i8, map_expr }
+  }
+}
+
+impl<'a, T> Expr<Box<Iterator<Item=T>>> for Chebyshev2DNeighbors<'a, T> {
+  fn eval(&self, n: &Context, pos: RelativePos) -> Box<Iterator<Item = T>> {
+    Box::new(
+      (-self.distance..=self.distance).flat_map(|x_offset| {
+        (-self.distance..=self.distance).map(|y_offset| {
+          self.map_expr.eval(
+            n,
+            RelativePos::new(x_offset+pos.x, y_offset+pos.y, pos.z)
+          )
+        })
+      })
+    )
   }
 }
 
@@ -116,7 +135,7 @@ mod tests {
   const COBBLE: BlockType = BlockType(37);
 
   #[test]
-  fn test_equals() {
+  fn test_equals_integers() {
     let context = TestContext {};
     let origin = RelativePos::new(0, 0, 0);
 
@@ -129,11 +148,58 @@ mod tests {
     assert_eq!(false, Equals::new(&one, &two).eval(&context, origin));
   }
 
+  #[test]
+  fn test_equals_block_types() {
+    let context = TestContext {};
+    let origin = RelativePos::new(0, 0, 0);
+    let west = RelativePos::new(-1, 0, 0);
+
+    let cobble: Constant<BlockType> = Constant::new(COBBLE);
+    let unknown: Constant<BlockType> = Constant::new(UNKNOWN);
+
+    assert_eq!(true, Equals::new(&cobble, &cobble).eval(&context, origin));
+    assert_eq!(true, Equals::new(&cobble, &cobble).eval(&context, west));
+    assert_eq!(false, Equals::new(&unknown, &cobble).eval(&context, origin));
+    assert_eq!(false, Equals::new(&unknown, &cobble).eval(&context, west));
+
+    let get_block_type = GetBlockType::new();
+
+    assert_eq!(true, Equals::new(&get_block_type, &cobble).eval(&context, origin));
+    assert_eq!(true, Equals::new(&cobble, &get_block_type).eval(&context, origin));
+    assert_eq!(false, Equals::new(&get_block_type, &unknown).eval(&context, origin));
+    assert_eq!(false, Equals::new(&unknown, &get_block_type).eval(&context, origin));
+
+    assert_eq!(false, Equals::new(&get_block_type, &cobble).eval(&context, west));
+    assert_eq!(false, Equals::new(&cobble, &get_block_type).eval(&context, west));
+    assert_eq!(true, Equals::new(&get_block_type, &unknown).eval(&context, west));
+    assert_eq!(true, Equals::new(&unknown, &get_block_type).eval(&context, west));
+  }
+
+  #[test]
+  fn test_chebyshev_2d_neighbors() {
+    let context = TestContext {};
+    let origin = RelativePos::new(0, 0, 0);
+    let west = RelativePos::new(-1, 0, 0);
+
+    let cobble: Constant<BlockType> = Constant::new(COBBLE);
+    let unknown: Constant<BlockType> = Constant::new(UNKNOWN);
+
+    let neighbor_types = Chebyshev2DNeighbors::new(1, &GetBlockType::new());
+    assert_eq!(
+      vec![UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, COBBLE, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN],
+      neighbor_types.eval(&context, origin).collect()
+    );
+    assert_eq!(
+      vec![UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, COBBLE, UNKNOWN, UNKNOWN, UNKNOWN],
+      neighbor_types.eval(&context, west).collect()
+    );
+  }
+
   struct TestContext {
   }
 
   impl Context for TestContext {
-    fn get_neighbor_block(&self, pos: RelativePos) -> BlockInfo {
+    fn get_block(&self, pos: RelativePos) -> BlockInfo {
       if pos.x == 0 {
         BlockInfo { block_type: COBBLE }
       } else {
