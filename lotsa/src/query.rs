@@ -1,105 +1,144 @@
 use std::marker::PhantomData;
 
-use crate::{block::BlockType};
+use crate::block::BlockType;
 
 #[derive(Clone, Copy)]
-pub struct BlockView {
-  pub block_type: BlockType
+pub struct BlockInfo {
+  pub block_type: BlockType,
 }
 
-impl BlockView {
+impl BlockInfo {
   pub fn block_type(&self) -> BlockType {
     self.block_type
   }
 }
 
-pub trait Blocks<I>
-where
-  I: Iterator<Item = BlockView>,
-{
-  fn iter(&self) -> I;
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct RelativePos {
+  pub x: i8,
+  pub y: i8,
+  pub z: i8,
 }
 
-pub trait Expr<T> {
-  fn eval(&self) -> T;
-}
-
-pub struct Count<I, B>
-where
-  I: Iterator<Item = BlockView>,
-  B: Blocks<I>,
-{
-  blocks: B,
-  iter_type: PhantomData<I>,
-}
-
-impl<I, B> Count<I, B>
-where
-  I: Iterator<Item = BlockView>,
-  B: Blocks<I>,
-{
-  fn new(blocks: B) -> Count<I, B> {
-    Count {
-      blocks,
-      iter_type: PhantomData,
-    }
+impl RelativePos {
+  pub fn new(x: i8, y: i8, z: i8) -> RelativePos {
+    RelativePos { x, y, z }
   }
 }
 
-impl<I, B> Expr<usize> for Count<I, B>
+pub trait Context {
+  fn get_neighbor_block(&self, pos: RelativePos) -> BlockInfo;
+}
+
+pub trait Area<I>
 where
-  I: Iterator<Item = BlockView>,
-  B: Blocks<I>,
+  I: Iterator<Item = RelativePos>,
 {
-  fn eval(&self) -> usize {
-    self.blocks.iter().count()
+  fn offsets(&self) -> Box<Iterator<Item = RelativePos>>;
+}
+
+pub trait Expr<T> {
+  fn eval(&self, n: &Context, pos: RelativePos) -> T;
+}
+
+pub struct GetBlockType {}
+
+impl GetBlockType {
+  pub fn new() -> GetBlockType {
+    GetBlockType {}
+  }
+}
+
+impl Expr<BlockType> for GetBlockType {
+  fn eval(&self, n: &Context, pos: RelativePos) -> BlockType {
+    n.get_neighbor_block(pos).block_type
+  }
+}
+
+pub struct Constant<T>
+where
+  T: Copy,
+{
+  value: T,
+}
+
+impl<T> Constant<T>
+where
+  T: Copy,
+{
+  pub fn new(value: T) -> Constant<T> {
+    Constant { value }
+  }
+}
+
+impl<T> Expr<T> for Constant<T>
+where
+  T: Copy,
+{
+  fn eval(&self, _n: &Context, _pos: RelativePos) -> T {
+    self.value
+  }
+}
+
+pub struct Equals<'a, T: PartialEq, L: Expr<T> + 'a, R: Expr<T> + 'a> {
+  left: &'a L,
+  right: &'a R,
+  phantom: PhantomData<T>
+}
+
+impl<'a, T, L, R> Equals<'a, T, L, R>
+where
+  T: PartialEq,
+  L: Expr<T> + 'a,
+  R: Expr<T> + 'a,
+{
+  pub fn new(left: &'a L, right: &'a R) -> Equals<'a, T, L, R> {
+    Equals { left, right, phantom: PhantomData }
+  }
+}
+
+impl<'a, T, L, R> Expr<bool> for Equals<'a, T, L, R>
+where
+  T: PartialEq,
+  L: Expr<T> + 'a,
+  R: Expr<T> + 'a,
+{
+  fn eval(&self, n: &Context, pos: RelativePos) -> bool {
+    self.left.eval(n, pos) == self.right.eval(n, pos)
   }
 }
 
 #[cfg(test)]
 mod tests {
   use super::*;
-  use std::iter;
+  use crate::block::UNKNOWN;
 
   const COBBLE: BlockType = BlockType(37);
 
   #[test]
-  fn test_count_one() {
-    let blocks = TestBlocks::new(&|| {
-      iter::once(BlockView { block_type: COBBLE })
-    });
-    let count = Count::new(blocks);
-    assert_eq!(count.eval(), 1);
-    assert_eq!(count.eval(), 1);
+  fn test_equals() {
+    let context = TestContext {};
+    let origin = RelativePos::new(0, 0, 0);
+
+    let one: Constant<u32> = Constant::new(1);
+    let another_one: Constant<u32> = Constant::new(1);
+    let two: Constant<u32> = Constant::new(2);
+
+    assert_eq!(true, Equals::new(&one, &one).eval(&context, origin));
+    assert_eq!(true, Equals::new(&one, &another_one).eval(&context, origin));
+    assert_eq!(false, Equals::new(&one, &two).eval(&context, origin));
   }
 
-  #[test]
-  fn test_count_zero() {
-    let blocks = TestBlocks::new(&|| iter::empty());
-    let count = Count::new(blocks);
-    assert_eq!(count.eval(), 0);
-    assert_eq!(count.eval(), 0);
+  struct TestContext {
   }
 
-  struct TestBlocks<'a, I: Iterator<Item = BlockView>> {
-    iter_maker: &'a Fn() -> I,
-  }
-
-  impl<'a, I> TestBlocks<'a, I>
-  where
-    I: Iterator<Item = BlockView>,
-  {
-    fn new(iter_maker: &'a Fn() -> I) -> TestBlocks<I> {
-      TestBlocks { iter_maker }
-    }
-  }
-
-  impl<I> Blocks<I> for TestBlocks<'_, I>
-  where
-    I: Iterator<Item = BlockView>,
-  {
-    fn iter(&self) -> I {
-      (self.iter_maker)()
+  impl Context for TestContext {
+    fn get_neighbor_block(&self, pos: RelativePos) -> BlockInfo {
+      if pos.x == 0 {
+        BlockInfo { block_type: COBBLE }
+      } else {
+        BlockInfo { block_type: UNKNOWN }
+      }
     }
   }
 }

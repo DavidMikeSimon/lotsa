@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
   block::{BlockType, UNKNOWN},
   chunk_pos::ChunkPos,
-  query::BlockView,
+  query::BlockInfo,
 };
 
 pub const CHUNK_WIDTH: u8 = 32;
@@ -50,9 +50,9 @@ impl Chunk {
     }
   }
 
-  pub fn get_block(&self, pos: ChunkPos) -> BlockView {
-    BlockView {
-      block_type: self.block_types[pos]
+  pub fn get_block(&self, pos: ChunkPos) -> BlockInfo {
+    BlockInfo {
+      block_type: self.block_types[pos],
     }
   }
 
@@ -114,9 +114,9 @@ impl<'a> ChunkBlocksIterator<'a> {
 }
 
 impl<'a> Iterator for ChunkBlocksIterator<'a> {
-  type Item = (ChunkPos, BlockView);
+  type Item = (ChunkPos, BlockInfo);
 
-  fn next(&mut self) -> Option<(ChunkPos, BlockView)> {
+  fn next(&mut self) -> Option<(ChunkPos, BlockInfo)> {
     if self.done {
       return None;
     }
