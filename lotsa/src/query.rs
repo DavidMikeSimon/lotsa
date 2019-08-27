@@ -30,8 +30,8 @@ pub trait Context {
   fn get_block(&self, pos: RelativePos) -> BlockInfo;
 }
 
-pub trait Expr<T> {
-  fn eval(&self, n: &Context, pos: RelativePos) -> T;
+pub trait Expr<'a, T> {
+  fn eval(&self, n: &'a Context, pos: RelativePos) -> T;
 }
 
 pub struct GetBlockType {}
@@ -42,8 +42,8 @@ impl GetBlockType {
   }
 }
 
-impl Expr<BlockType> for GetBlockType {
-  fn eval(&self, n: &Context, pos: RelativePos) -> BlockType {
+impl<'a> Expr<'a, BlockType> for GetBlockType {
+  fn eval(&self, n: &'a Context, pos: RelativePos) -> BlockType {
     n.get_block(pos).block_type
   }
 }
@@ -64,16 +64,16 @@ where
   }
 }
 
-impl<T> Expr<T> for Constant<T>
+impl<'a, T> Expr<'a, T> for Constant<T>
 where
   T: Copy,
 {
-  fn eval(&self, _n: &Context, _pos: RelativePos) -> T {
+  fn eval(&self, _n: &'a Context, _pos: RelativePos) -> T {
     self.value
   }
 }
 
-pub struct Equals<'a, T: PartialEq, L: Expr<T>, R: Expr<T>> {
+pub struct Equals<'a, T: PartialEq, L: Expr<'a, T>, R: Expr<'a, T>> {
   left: &'a L,
   right: &'a R,
   phantom: PhantomData<T>
@@ -82,44 +82,52 @@ pub struct Equals<'a, T: PartialEq, L: Expr<T>, R: Expr<T>> {
 impl<'a, T, L, R> Equals<'a, T, L, R>
 where
   T: PartialEq,
-  L: Expr<T>,
-  R: Expr<T>,
+  L: Expr<'a, T>,
+  R: Expr<'a, T>,
 {
   pub fn new(left: &'a L, right: &'a R) -> Equals<'a, T, L, R> {
     Equals { left, right, phantom: PhantomData }
   }
 }
 
-impl<'a, T, L, R> Expr<bool> for Equals<'a, T, L, R>
+impl<'a, T, L, R> Expr<'a, bool> for Equals<'a, T, L, R>
 where
   T: PartialEq,
-  L: Expr<T>,
-  R: Expr<T>,
+  L: Expr<'a, T>,
+  R: Expr<'a, T>,
 {
-  fn eval(&self, n: &Context, pos: RelativePos) -> bool {
+  fn eval(&self, n: &'a Context, pos: RelativePos) -> bool {
     self.left.eval(n, pos) == self.right.eval(n, pos)
   }
 }
 
-pub struct Chebyshev2DNeighbors {
-  distance: i8
+pub struct Chebyshev2DNeighbors<'a, T, E> where E: Expr<'a, T> {
+  distance: i8,
+  map_expr: &'a E,
+  phantom: PhantomData<T>
 }
 
-impl Chebyshev2DNeighbors {
-  pub fn new(distance: u8) -> Chebyshev2DNeighbors {
-    Chebyshev2DNeighbors { distance: distance as i8 }
+impl<'a, T, E> Chebyshev2DNeighbors<'a, T, E> where E: Expr<'a, T> {
+  pub fn new(distance: u8, map_expr: &'a E) -> Chebyshev2DNeighbors<'a, T, E> {
+    Chebyshev2DNeighbors {
+      distance: distance as i8,
+      map_expr,
+      phantom: PhantomData
+    }
   }
 }
 
-impl Expr<Box<Iterator<Item=BlockInfo>>> for Chebyshev2DNeighbors {
-  fn eval(&self, n: &Context, pos: RelativePos) -> impl Iterator<Item = BlockInfo> {
-    (-self.distance..=self.distance).flat_map(|x_offset| {
-      (-self.distance..=self.distance).map(|y_offset| {
-        n.get_block(
-          RelativePos::new(x_offset+pos.x, y_offset+pos.y, pos.z)
-        )
+impl<'a, T, E> Expr<'a, Box<Iterator<Item=T> + 'a>> for Chebyshev2DNeighbors<'a, T, E> where E: Expr<'a, T> {
+  fn eval(&self, n: &'a Context, pos: RelativePos) -> Box<Iterator<Item = T> + 'a> {
+    let distance = self.distance;
+    let map_expr = self.map_expr;
+    Box::new(
+      (-distance..=distance).flat_map(move |y_offset| {
+        (-distance..=distance).map(move |x_offset| {
+          map_expr.eval(n, RelativePos::new(x_offset+pos.x, y_offset+pos.y, pos.z))
+        })
       })
-    })
+    )
   }
 }
 
@@ -171,32 +179,38 @@ mod tests {
     assert_eq!(true, Equals::new(&unknown, &get_block_type).eval(&context, west));
   }
 
-  // #[test]
-  // fn test_chebyshev_2d_neighbors() {
-    // let context = TestContext {};
-    // let origin = RelativePos::new(0, 0, 0);
-    // let west = RelativePos::new(-1, 0, 0);
+  #[test]
+  fn test_chebyshev_2d_neighbors() {
+    let context = TestContext {};
+    let origin = RelativePos::new(0, 0, 0);
+    let west = RelativePos::new(-1, 0, 0);
+    let get_block_type = GetBlockType::new();
 
-    // let cobble: Constant<BlockType> = Constant::new(COBBLE);
-    // let unknown: Constant<BlockType> = Constant::new(UNKNOWN);
+    let get_neighbor_types = Chebyshev2DNeighbors::new(1, &get_block_type);
+    assert_eq!(
+      vec![UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, COBBLE, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN],
+      get_neighbor_types.eval(&context, origin).collect::<Vec<BlockType>>()
+    );
+    assert_eq!(
+      vec![UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, COBBLE, UNKNOWN, UNKNOWN, UNKNOWN],
+      get_neighbor_types.eval(&context, west).collect::<Vec<BlockType>>()
+    );
 
-    // let neighbor_types = Chebyshev2DNeighbors::new(1, &GetBlockType::new());
-    // assert_eq!(
-      // vec![UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, COBBLE, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN],
-      // neighbor_types.eval(&context, origin).collect()
-    // );
-    // assert_eq!(
-      // vec![UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, COBBLE, UNKNOWN, UNKNOWN, UNKNOWN],
-      // neighbor_types.eval(&context, west).collect()
-    // );
-  // }
+    let cobble: Constant<BlockType> = Constant::new(COBBLE);
+    let equals_cobble = Equals::new(&get_block_type, &cobble);
+    let cobble_neighbors = Chebyshev2DNeighbors::new(1, &equals_cobble);
+    assert_eq!(
+      vec![false, false, false, false, true, false, false, false, false],
+      cobble_neighbors.eval(&context, origin).collect::<Vec<bool>>()
+    );
+  }
 
   struct TestContext {
   }
 
   impl Context for TestContext {
     fn get_block(&self, pos: RelativePos) -> BlockInfo {
-      if pos.x == 0 {
+      if pos.x == 0 && pos.y == 0 && pos.z == 0{
         BlockInfo { block_type: COBBLE }
       } else {
         BlockInfo { block_type: UNKNOWN }
