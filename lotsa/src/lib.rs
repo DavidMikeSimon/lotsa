@@ -29,6 +29,7 @@ pub mod chunk_pos;
 pub mod debug;
 pub mod life;
 pub mod query;
+pub mod relative_pos;
 pub mod sim;
 
 #[cfg(feature = "client")]
