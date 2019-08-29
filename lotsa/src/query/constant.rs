@@ -1,4 +1,4 @@
-use super::*;
+use crate::{query::*, relative_pos::*};
 
 pub struct Constant<T>
 where
@@ -31,8 +31,8 @@ where
 
 #[cfg(test)]
 mod tests {
-  use super::super::tests::{TestContext, COBBLE};
   use super::*;
+  use crate::query::tests::{TestContext, COBBLE};
 
   #[test]
   fn test_integer_constant() {

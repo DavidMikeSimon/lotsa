@@ -1,4 +1,4 @@
-use super::*;
+use crate::{query::*, relative_pos::*};
 
 pub struct GetBlockType {}
 
@@ -28,9 +28,9 @@ impl<'a> Query<'a, BlockType> for GetBlockType {
 
 #[cfg(test)]
 mod tests {
-  use super::super::tests::{TestContext, COBBLE};
   use super::*;
   use crate::block::UNKNOWN;
+  use crate::query::tests::{TestContext, COBBLE};
 
   #[test]
   fn test_get_block_type() {

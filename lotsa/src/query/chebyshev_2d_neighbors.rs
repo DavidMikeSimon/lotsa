@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use super::*;
+use crate::{query::*, relative_pos::*};
 
 pub struct Chebyshev2DNeighbors<'a, T, E>
 where
@@ -60,9 +60,9 @@ where
 
 #[cfg(test)]
 mod tests {
-  use super::super::tests::{TestContext, COBBLE};
   use super::*;
   use crate::block::UNKNOWN;
+  use crate::query::tests::{TestContext, COBBLE};
 
   #[test]
   fn test_neighbors_block_types() {

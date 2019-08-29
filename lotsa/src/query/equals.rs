@@ -1,4 +1,4 @@
-use super::*;
+use crate::{query::*, relative_pos::*};
 
 pub struct Equals<'a, T: PartialEq, L: Query<'a, T>, R: Query<'a, T>> {
   left: &'a L,
@@ -38,9 +38,9 @@ where
 
 #[cfg(test)]
 mod tests {
-  use super::super::tests::{TestContext, COBBLE};
   use super::*;
   use crate::block::UNKNOWN;
+  use crate::query::tests::{TestContext, COBBLE};
 
   #[test]
   fn test_equals_integers() {
