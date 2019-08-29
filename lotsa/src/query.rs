@@ -75,7 +75,7 @@ impl CacheableField {
 }
 
 impl Cacheability {
-  pub fn intersection(a: &Cacheability, b: &Cacheability) -> Cacheability {
+  pub fn merge(a: &Cacheability, b: &Cacheability) -> Cacheability {
     match (a, b) {
       (DontCache, _) => DontCache,
       (_, DontCache) => DontCache,

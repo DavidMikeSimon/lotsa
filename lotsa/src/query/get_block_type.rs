@@ -42,5 +42,12 @@ mod tests {
 
     assert_eq!(get_block_type.eval(&context, origin), COBBLE);
     assert_eq!(get_block_type.eval(&context, west), UNKNOWN);
+
+    assert_eq!(
+      get_block_type.cacheability(),
+      UntilChangeInSelf {
+        fields: vec![CacheableBlockType]
+      }
+    );
   }
 }

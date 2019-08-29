@@ -32,7 +32,7 @@ where
   }
 
   fn cacheability(&self) -> Cacheability {
-    Cacheability::intersection(&self.left.cacheability(), &self.right.cacheability())
+    Cacheability::merge(&self.left.cacheability(), &self.right.cacheability())
   }
 }
 
@@ -54,6 +54,9 @@ mod tests {
     assert!(Equals::new(&one, &one).eval(&context, origin));
     assert!(Equals::new(&one, &another_one).eval(&context, origin));
     assert!(!Equals::new(&one, &two).eval(&context, origin));
+
+    assert_eq!(Equals::new(&one, &one).cacheability(), Forever);
+    assert_eq!(Equals::new(&one, &two).cacheability(), Forever);
   }
 
   #[test]
@@ -70,6 +73,9 @@ mod tests {
     assert!(!Equals::new(&unknown, &cobble).eval(&context, origin));
     assert!(!Equals::new(&unknown, &cobble).eval(&context, west));
 
+    assert_eq!(Equals::new(&cobble, &cobble).cacheability(), Forever);
+    assert_eq!(Equals::new(&unknown, &cobble).cacheability(), Forever);
+
     let get_block_type = GetBlockType::new();
 
     assert!(Equals::new(&get_block_type, &cobble).eval(&context, origin));
@@ -81,5 +87,19 @@ mod tests {
     assert!(!Equals::new(&cobble, &get_block_type).eval(&context, west));
     assert!(Equals::new(&get_block_type, &unknown).eval(&context, west));
     assert!(Equals::new(&unknown, &get_block_type).eval(&context, west));
+
+    assert_eq!(
+      Equals::new(&get_block_type, &cobble).cacheability(),
+      UntilChangeInSelf {
+        fields: vec![CacheableBlockType]
+      }
+    );
+
+    assert_eq!(
+      Equals::new(&cobble, &get_block_type).cacheability(),
+      UntilChangeInSelf {
+        fields: vec![CacheableBlockType]
+      }
+    );
   }
 }

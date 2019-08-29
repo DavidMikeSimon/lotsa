@@ -41,6 +41,7 @@ mod tests {
 
     let one: Constant<u32> = Constant::new(1);
     assert_eq!(one.eval(&context, origin), 1);
+    assert_eq!(one.cacheability(), Forever);
   }
 
   #[test]
@@ -50,5 +51,6 @@ mod tests {
 
     let cobble: Constant<BlockType> = Constant::new(COBBLE);
     assert_eq!(cobble.eval(&context, origin), COBBLE);
+    assert_eq!(cobble.cacheability(), Forever);
   }
 }

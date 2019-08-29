@@ -47,10 +47,13 @@ where
   }
 
   fn cacheability(&self) -> Cacheability {
-    let map_expr_cacheability = self.map_expr.cacheability();
-    UntilChangeInChebyshevNeighborhood {
-      distance: self.distance + map_expr_cacheability.distance(),
-      fields: map_expr_cacheability.fields().to_vec(),
+    match self.map_expr.cacheability() {
+      DontCache => DontCache,
+      Forever => Forever,
+      map_expr_cacheability => UntilChangeInChebyshevNeighborhood {
+        distance: self.distance + map_expr_cacheability.distance(),
+        fields: map_expr_cacheability.fields().to_vec(),
+      },
     }
   }
 }
@@ -62,7 +65,7 @@ mod tests {
   use crate::block::UNKNOWN;
 
   #[test]
-  fn test_chebyshev_2d_neighbors() {
+  fn test_neighbors_block_types() {
     let context = TestContext {};
     let origin = RelativePos::new(0, 0, 0);
     let west = RelativePos::new(-1, 0, 0);
@@ -82,14 +85,104 @@ mod tests {
         .collect::<Vec<BlockType>>()
     );
 
+    assert_eq!(
+      get_neighbor_types.cacheability(),
+      UntilChangeInChebyshevNeighborhood {
+        distance: 1,
+        fields: vec![CacheableBlockType]
+      }
+    )
+  }
+
+  #[test]
+  fn test_neighbors_block_type_equality() {
+    let context = TestContext {};
+    let origin = RelativePos::new(0, 0, 0);
+    let get_block_type = GetBlockType::new();
+
     let cobble: Constant<BlockType> = Constant::new(COBBLE);
     let equals_cobble = Equals::new(&get_block_type, &cobble);
-    let cobble_neighbors = Chebyshev2DNeighbors::new(1, &equals_cobble);
+    let get_neighbor_cobbleness = Chebyshev2DNeighbors::new(1, &equals_cobble);
     assert_eq!(
       vec![false, false, false, false, true, false, false, false, false],
-      cobble_neighbors
+      get_neighbor_cobbleness
         .eval(&context, origin)
         .collect::<Vec<bool>>()
     );
+
+    assert_eq!(
+      get_neighbor_cobbleness.cacheability(),
+      UntilChangeInChebyshevNeighborhood {
+        distance: 1,
+        fields: vec![CacheableBlockType]
+      }
+    )
+  }
+
+  #[test]
+  fn test_distant_neighbors_block_type_equality() {
+    let context = TestContext {};
+    let origin = RelativePos::new(0, 0, 0);
+    let get_block_type = GetBlockType::new();
+
+    let cobble: Constant<BlockType> = Constant::new(COBBLE);
+    let equals_cobble = Equals::new(&get_block_type, &cobble);
+    let get_distant_neighbor_cobbleness = Chebyshev2DNeighbors::new(2, &equals_cobble);
+
+    let mut expected_bools: Vec<bool> = Vec::new();
+    expected_bools.extend_from_slice(&[false; 12]);
+    expected_bools.extend_from_slice(&[true; 1]);
+    expected_bools.extend_from_slice(&[false; 12]);
+    assert_eq!(
+      expected_bools,
+      get_distant_neighbor_cobbleness
+        .eval(&context, origin)
+        .collect::<Vec<bool>>()
+    );
+
+    assert_eq!(
+      get_distant_neighbor_cobbleness.cacheability(),
+      UntilChangeInChebyshevNeighborhood {
+        distance: 2,
+        fields: vec![CacheableBlockType]
+      }
+    )
+  }
+
+  #[test]
+  fn test_nested() {
+    let context = TestContext {};
+    let origin = RelativePos::new(0, 0, 0);
+
+    let get_block_type = GetBlockType::new();
+    let get_neighbor_types = Chebyshev2DNeighbors::new(1, &get_block_type);
+    // This is a terrible and silly approach, but fun to test anyways
+    let get_neighbors_neighbor_types = Chebyshev2DNeighbors::new(1, &get_neighbor_types);
+
+    assert_eq!(
+      vec![
+        vec![UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, COBBLE],
+        vec![UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, COBBLE, UNKNOWN],
+        vec![UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, COBBLE, UNKNOWN, UNKNOWN],
+        vec![UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, COBBLE, UNKNOWN, UNKNOWN, UNKNOWN],
+        vec![UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, COBBLE, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN],
+        vec![UNKNOWN, UNKNOWN, UNKNOWN, COBBLE, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN],
+        vec![UNKNOWN, UNKNOWN, COBBLE, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN],
+        vec![UNKNOWN, COBBLE, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN],
+        vec![COBBLE, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN],
+      ],
+      get_neighbors_neighbor_types
+        .eval(&context, origin)
+        .map(|i| i.collect::<Vec<BlockType>>())
+        .collect::<Vec<Vec<BlockType>>>()
+    );
+
+    assert_eq!(
+      get_neighbors_neighbor_types.cacheability(),
+      UntilChangeInChebyshevNeighborhood {
+        distance: 2,
+        fields: vec![CacheableBlockType]
+      }
+    )
   }
 }
