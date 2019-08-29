@@ -14,7 +14,7 @@ impl Default for GetBlockType {
   }
 }
 
-impl<'a> Expr<'a, BlockType> for GetBlockType {
+impl<'a> Query<'a, BlockType> for GetBlockType {
   fn eval(&self, n: &'a Context, pos: RelativePos) -> BlockType {
     n.get_block(pos).block_type
   }

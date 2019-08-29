@@ -19,7 +19,7 @@ pub trait Context {
   fn get_block(&self, pos: RelativePos) -> BlockInfo;
 }
 
-pub trait Expr<'a, T> {
+pub trait Query<'a, T> {
   fn eval(&self, n: &'a Context, pos: RelativePos) -> T;
 
   fn cacheability(&self) -> Cacheability {

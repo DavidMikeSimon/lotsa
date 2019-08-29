@@ -4,7 +4,7 @@ use super::*;
 
 pub struct Chebyshev2DNeighbors<'a, T, E>
 where
-  E: Expr<'a, T>,
+  E: Query<'a, T>,
 {
   distance: u8,
   map_expr: &'a E,
@@ -13,7 +13,7 @@ where
 
 impl<'a, T, E> Chebyshev2DNeighbors<'a, T, E>
 where
-  E: Expr<'a, T>,
+  E: Query<'a, T>,
 {
   pub fn new(distance: u8, map_expr: &'a E) -> Chebyshev2DNeighbors<'a, T, E> {
     if distance > 127 {
@@ -27,9 +27,9 @@ where
   }
 }
 
-impl<'a, T, E> Expr<'a, Box<Iterator<Item = T> + 'a>> for Chebyshev2DNeighbors<'a, T, E>
+impl<'a, T, E> Query<'a, Box<Iterator<Item = T> + 'a>> for Chebyshev2DNeighbors<'a, T, E>
 where
-  E: Expr<'a, T>,
+  E: Query<'a, T>,
 {
   fn eval(&self, n: &'a Context, pos: RelativePos) -> Box<Iterator<Item = T> + 'a> {
     let distance = self.distance;

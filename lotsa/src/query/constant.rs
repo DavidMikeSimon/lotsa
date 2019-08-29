@@ -16,7 +16,7 @@ where
   }
 }
 
-impl<'a, T> Expr<'a, T> for Constant<T>
+impl<'a, T> Query<'a, T> for Constant<T>
 where
   T: Copy,
 {

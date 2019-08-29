@@ -1,6 +1,6 @@
 use super::*;
 
-pub struct Equals<'a, T: PartialEq, L: Expr<'a, T>, R: Expr<'a, T>> {
+pub struct Equals<'a, T: PartialEq, L: Query<'a, T>, R: Query<'a, T>> {
   left: &'a L,
   right: &'a R,
   phantom: PhantomData<T>,
@@ -9,8 +9,8 @@ pub struct Equals<'a, T: PartialEq, L: Expr<'a, T>, R: Expr<'a, T>> {
 impl<'a, T, L, R> Equals<'a, T, L, R>
 where
   T: PartialEq,
-  L: Expr<'a, T>,
-  R: Expr<'a, T>,
+  L: Query<'a, T>,
+  R: Query<'a, T>,
 {
   pub fn new(left: &'a L, right: &'a R) -> Equals<'a, T, L, R> {
     Equals {
@@ -21,11 +21,11 @@ where
   }
 }
 
-impl<'a, T, L, R> Expr<'a, bool> for Equals<'a, T, L, R>
+impl<'a, T, L, R> Query<'a, bool> for Equals<'a, T, L, R>
 where
   T: PartialEq,
-  L: Expr<'a, T>,
-  R: Expr<'a, T>,
+  L: Query<'a, T>,
+  R: Query<'a, T>,
 {
   fn eval(&self, n: &'a Context, pos: RelativePos) -> bool {
     self.left.eval(n, pos) == self.right.eval(n, pos)
