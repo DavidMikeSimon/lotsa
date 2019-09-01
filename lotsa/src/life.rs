@@ -6,7 +6,7 @@ use crate::{
 
 pub const LIFE: BlockType = BlockType(3);
 
-fn live_neighbors(neighbors: Vec<BlockType>) -> usize {
+fn live_blocks_here(neighbors: Vec<BlockType>) -> usize {
   neighbors.iter().filter(|&&b| b == LIFE).count()
 }
 
@@ -15,7 +15,7 @@ pub fn init(sim: &mut Simulator) {
     let neighbor_block_types =
       updater.prepare_query(&Chebyshev2DNeighbors::new(1, &GetBlockType::new()));
     updater.implement(move |handle: &UpdaterHandle| {
-      let nearby = live_neighbors(handle.query(&neighbor_block_types));
+      let nearby = live_blocks_here(handle.query(&neighbor_block_types)) - 1;
       if nearby >= 2 && nearby <= 4 {
         None
       } else {
@@ -28,7 +28,7 @@ pub fn init(sim: &mut Simulator) {
     let neighbor_block_types =
       updater.prepare_query(&Chebyshev2DNeighbors::new(1, &GetBlockType::new()));
     updater.implement(move |handle: &UpdaterHandle| {
-      let nearby = live_neighbors(handle.query(&neighbor_block_types));
+      let nearby = live_blocks_here(handle.query(&neighbor_block_types));
       if nearby == 3 {
         Some(LIFE)
       } else {
