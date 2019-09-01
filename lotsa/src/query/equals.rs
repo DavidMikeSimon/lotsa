@@ -37,7 +37,7 @@ where
   L: Query<T>,
   R: Query<T>,
 {
-  fn eval<'a>(&self, n: &Context, pos: RelativePos) -> bool where bool: 'a {
+  fn eval(&self, n: &Context, pos: RelativePos) -> bool {
     self.left.eval(n, pos) == self.right.eval(n, pos)
   }
 

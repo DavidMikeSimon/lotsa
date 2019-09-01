@@ -35,23 +35,22 @@ where
 {
 }
 
-impl<T, E> Query<Box<Iterator<Item = T>>> for Chebyshev2DNeighbors<T, E>
+impl<T, E> Query<Vec<T>> for Chebyshev2DNeighbors<T, E>
 where
   E: Query<T>,
 {
-  fn eval<'a>(&self, n: &'a Context, pos: RelativePos) -> Box<Iterator<Item = T>> where Box<Iterator<Item = T>>: 'a {
-    let distance = self.distance;
-    let map_expr = self.map_expr;
+  fn eval(&self, n: &Context, pos: RelativePos) -> Vec<T> {
+    let d = self.distance;
     Box::new(
-      (-(distance as i8)..=(distance as i8)).flat_map(move |y_offset| {
-        (-(distance as i8)..=(distance as i8)).map(move |x_offset| {
-          map_expr.eval(
+      (-(d as i8)..=(d as i8)).flat_map(move |y_offset| {
+        (-(d as i8)..=(d as i8)).map(move |x_offset| {
+          self.map_expr.eval(
             n,
             RelativePos::new(x_offset + pos.x, y_offset + pos.y, pos.z),
           )
         })
       }),
-    )
+    ).collect()
   }
 
   fn cacheability(&self) -> Cacheability {
@@ -118,13 +117,11 @@ mod tests {
       vec![UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, COBBLE, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN],
       get_neighbor_types
         .eval(&context, origin)
-        .collect::<Vec<BlockType>>()
     );
     assert_eq!(
       vec![UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, COBBLE, UNKNOWN, UNKNOWN, UNKNOWN],
       get_neighbor_types
         .eval(&context, west)
-        .collect::<Vec<BlockType>>()
     );
 
     assert_eq!(
@@ -149,7 +146,6 @@ mod tests {
       vec![false, false, false, false, true, false, false, false, false],
       get_neighbor_cobbleness
         .eval(&context, origin)
-        .collect::<Vec<bool>>()
     );
 
     assert_eq!(
@@ -179,7 +175,6 @@ mod tests {
       expected_bools,
       get_distant_neighbor_cobbleness
         .eval(&context, origin)
-        .collect::<Vec<bool>>()
     );
 
     assert_eq!(
@@ -215,8 +210,6 @@ mod tests {
       ],
       get_neighbors_neighbor_types
         .eval(&context, origin)
-        .map(|i| i.collect::<Vec<BlockType>>())
-        .collect::<Vec<Vec<BlockType>>>()
     );
 
     assert_eq!(

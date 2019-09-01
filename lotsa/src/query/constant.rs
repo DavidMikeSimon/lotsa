@@ -28,7 +28,7 @@ impl<T> Query<T> for Constant<T>
 where
   T: Copy + Debug + PartialEq,
 {
-  fn eval<'a>(&self, _n: &Context, _pos: RelativePos) -> T where T: 'a {
+  fn eval(&self, _n: &Context, _pos: RelativePos) -> T {
     self.value
   }
 

@@ -31,7 +31,7 @@ impl PartialEq for GenericQuery {
 
 pub trait Query<T> : GenericQuery + Clone + PartialEq 
 {
-  fn eval<'a>(&self, n: &'a Context, pos: RelativePos) -> T where T: 'a;
+  fn eval(&self, n: &Context, pos: RelativePos) -> T;
 
   fn cacheability(&self) -> Cacheability {
     DontCache

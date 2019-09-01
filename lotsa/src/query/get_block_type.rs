@@ -19,7 +19,7 @@ impl GenericQuery for GetBlockType {
 }
 
 impl Query<BlockType> for GetBlockType {
-  fn eval<'a>(&self, n: &Context, pos: RelativePos) -> BlockType where BlockType: 'a {
+  fn eval(&self, n: &Context, pos: RelativePos) -> BlockType {
     n.get_block(pos).block_type
   }
 
