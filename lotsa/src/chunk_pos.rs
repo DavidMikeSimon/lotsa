@@ -22,24 +22,16 @@ impl ChunkPos {
     }
   }
 
-  pub fn raw_n(self) -> u16 {
-    self.n
-  }
+  pub fn raw_n(self) -> u16 { self.n }
 
   #[allow(clippy::cast_lossless)]
-  pub fn x(self) -> u8 {
-    ((self.n / (CHUNK_WIDTH_E2 as u16)) % (CHUNK_WIDTH as u16)) as u8
-  }
+  pub fn x(self) -> u8 { ((self.n / (CHUNK_WIDTH_E2 as u16)) % (CHUNK_WIDTH as u16)) as u8 }
 
   #[allow(clippy::cast_lossless)]
-  pub fn y(self) -> u8 {
-    ((self.n / (CHUNK_WIDTH as u16)) % (CHUNK_WIDTH as u16)) as u8
-  }
+  pub fn y(self) -> u8 { ((self.n / (CHUNK_WIDTH as u16)) % (CHUNK_WIDTH as u16)) as u8 }
 
   #[allow(clippy::cast_lossless)]
-  pub fn z(self) -> u8 {
-    (self.n % (CHUNK_WIDTH as u16)) as u8
-  }
+  pub fn z(self) -> u8 { (self.n % (CHUNK_WIDTH as u16)) as u8 }
 
   pub fn increment(&mut self) -> bool {
     if self.n == CHUNK_WIDTH_E3 as u16 - 1 {

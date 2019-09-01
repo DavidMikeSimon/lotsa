@@ -13,6 +13,7 @@ where
   L: Query<T>,
   R: Query<T>,
 {
+  // TODO: Const
   pub fn new(left: &L, right: &R) -> Equals<T, L, R> {
     Equals {
       left: left.clone(),
@@ -38,7 +39,7 @@ where
   L: Query<T>,
   R: Query<T>,
 {
-  fn eval(&self, n: &Context, pos: RelativePos) -> bool {
+  fn eval(&self, n: &dyn Context, pos: RelativePos) -> bool {
     self.left.eval(n, pos) == self.right.eval(n, pos)
   }
 }
@@ -85,8 +86,10 @@ where
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::block::UNKNOWN;
-  use crate::query::tests::{TestContext, COBBLE};
+  use crate::{
+    block::UNKNOWN,
+    query::tests::{TestContext, COBBLE},
+  };
 
   #[test]
   fn test_equals_integers() {

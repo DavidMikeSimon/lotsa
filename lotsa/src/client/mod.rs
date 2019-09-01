@@ -47,9 +47,7 @@ impl LotsaClientWrapper {
     }
   }
 
-  pub fn send_message(&self, data: &str) {
-    self.client.ws.send_with_str(data).unwrap();
-  }
+  pub fn send_message(&self, data: &str) { self.client.ws.send_with_str(data).unwrap(); }
 }
 
 struct LotsaClient {

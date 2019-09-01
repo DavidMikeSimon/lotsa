@@ -4,15 +4,11 @@ use crate::{query::*, relative_pos::*};
 pub struct GetBlockType {}
 
 impl GetBlockType {
-  pub fn new() -> GetBlockType {
-    GetBlockType {}
-  }
+  pub const fn new() -> GetBlockType { GetBlockType {} }
 }
 
 impl Default for GetBlockType {
-  fn default() -> GetBlockType {
-    GetBlockType::new()
-  }
+  fn default() -> GetBlockType { GetBlockType::new() }
 }
 
 impl GenericQuery for GetBlockType {
@@ -24,16 +20,16 @@ impl GenericQuery for GetBlockType {
 }
 
 impl Query<BlockType> for GetBlockType {
-  fn eval(&self, n: &Context, pos: RelativePos) -> BlockType {
-    n.get_block(pos).block_type
-  }
+  fn eval(&self, n: &dyn Context, pos: RelativePos) -> BlockType { n.get_block(pos).block_type }
 }
 
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::block::UNKNOWN;
-  use crate::query::tests::{TestContext, COBBLE};
+  use crate::{
+    block::UNKNOWN,
+    query::tests::{TestContext, COBBLE},
+  };
 
   #[test]
   fn test_get_block_type() {

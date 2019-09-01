@@ -7,27 +7,21 @@ pub struct Constant<T> {
 }
 
 impl<T> Constant<T> {
-  pub fn new(value: T) -> Constant<T> {
-    Constant { value }
-  }
+  pub const fn new(value: T) -> Constant<T> { Constant { value } }
 }
 
 impl<T> GenericQuery for Constant<T>
 where
   T: Debug,
 {
-  fn cacheability(&self) -> Cacheability {
-    Forever
-  }
+  fn cacheability(&self) -> Cacheability { Forever }
 }
 
 impl<T> Query<T> for Constant<T>
 where
   T: Copy + Debug + PartialEq,
 {
-  fn eval(&self, _n: &Context, _pos: RelativePos) -> T {
-    self.value
-  }
+  fn eval(&self, _n: &dyn Context, _pos: RelativePos) -> T { self.value }
 }
 
 #[cfg(test)]

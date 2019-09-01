@@ -1,6 +1,4 @@
-use std::cmp::max;
-use std::fmt::Debug;
-use std::marker::PhantomData;
+use std::{cmp::max, fmt::Debug, marker::PhantomData};
 
 use crate::{block::BlockType, relative_pos::RelativePos};
 
@@ -25,7 +23,7 @@ pub trait GenericQuery: Debug {
 }
 
 pub trait Query<T>: GenericQuery + Clone + PartialEq {
-  fn eval(&self, n: &Context, pos: RelativePos) -> T;
+  fn eval(&self, n: &dyn Context, pos: RelativePos) -> T;
 }
 
 #[derive(Clone, Debug)]
@@ -34,9 +32,7 @@ pub struct BlockInfo {
 }
 
 impl BlockInfo {
-  pub fn block_type(&self) -> BlockType {
-    self.block_type
-  }
+  pub fn block_type(&self) -> BlockType { self.block_type }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -86,7 +82,7 @@ impl Cacheability {
         UntilChangeInSelf {
           fields: CacheableField::merge(fields_a, fields_b),
         }
-      }
+      },
       (_, _) => UntilChangeInChebyshevNeighborhood {
         distance: max(a.distance(), b.distance()),
         fields: CacheableField::merge(a.fields(), b.fields()),

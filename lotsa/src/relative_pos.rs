@@ -6,7 +6,5 @@ pub struct RelativePos {
 }
 
 impl RelativePos {
-  pub fn new(x: i8, y: i8, z: i8) -> RelativePos {
-    RelativePos { x, y, z }
-  }
+  pub fn new(x: i8, y: i8, z: i8) -> RelativePos { RelativePos { x, y, z } }
 }

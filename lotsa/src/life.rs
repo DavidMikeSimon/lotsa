@@ -35,7 +35,7 @@ pub fn init(sim: &mut Simulator) {
 mod tests {
   use super::*;
   use crate::{block::UNKNOWN, chunk::Chunk, debug::Debugger};
-  //use test::Bencher;
+  use test::Bencher;
 
   #[test]
   fn test_blinker() {
@@ -76,30 +76,28 @@ mod tests {
     );
   }
 
-  /*
-   *   #[bench]
-   *   fn bench_blinker(b: &mut Bencher) {
-   *     let mut base_chunk = Chunk::new();
-   *     let debugger = Debugger::new(hashmap!(UNKNOWN => 'X', EMPTY => '.', LIFE => 'L'));
-   *
-   *     debugger.load(
-   *       &mut base_chunk,
-   *       ".....
-   *        .....
-   *        .LLL.
-   *        .....
-   *        .....",
-   *     );
-   *
-   *     b.iter(|| {
-   *       let mut chunk = base_chunk;
-   *       let mut sim = Simulator::new();
-   *       init(&mut sim);
-   *
-   *       for _x in 1..10 {
-   *         sim.step(&mut chunk);
-   *       }
-   *     });
-   *   }
-   */
+  #[bench]
+  fn bench_blinker(b: &mut Bencher) {
+    let mut base_chunk = Chunk::new();
+    let debugger = Debugger::new(hashmap!(UNKNOWN => 'X', EMPTY => '.', LIFE => 'L'));
+
+    debugger.load(
+      &mut base_chunk,
+      ".....
+         .....
+         .LLL.
+         .....
+         .....",
+    );
+
+    b.iter(|| {
+      let mut chunk = base_chunk;
+      let mut sim = Simulator::new();
+      init(&mut sim);
+
+      for _x in 1..10 {
+        sim.step(&mut chunk);
+      }
+    });
+  }
 }

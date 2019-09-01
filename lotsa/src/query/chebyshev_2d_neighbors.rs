@@ -1,6 +1,4 @@
-use std::cmp::PartialEq;
-use std::fmt;
-use std::marker::PhantomData;
+use std::{cmp::PartialEq, fmt, marker::PhantomData};
 
 use crate::{query::*, relative_pos::*};
 
@@ -14,6 +12,7 @@ impl<T, E> Chebyshev2DNeighbors<T, E>
 where
   E: Query<T>,
 {
+  // TODO: Const
   pub fn new(distance: u8, map_expr: &E) -> Chebyshev2DNeighbors<T, E> {
     if distance > 127 {
       panic!("Distance must be <= 127")
@@ -46,7 +45,7 @@ impl<T, E> Query<Vec<T>> for Chebyshev2DNeighbors<T, E>
 where
   E: Query<T>,
 {
-  fn eval(&self, n: &Context, pos: RelativePos) -> Vec<T> {
+  fn eval(&self, n: &dyn Context, pos: RelativePos) -> Vec<T> {
     let d = self.distance;
     Box::new((-(d as i8)..=(d as i8)).flat_map(move |y_offset| {
       (-(d as i8)..=(d as i8)).map(move |x_offset| {
@@ -98,8 +97,10 @@ where
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::block::UNKNOWN;
-  use crate::query::tests::{TestContext, COBBLE};
+  use crate::{
+    block::UNKNOWN,
+    query::tests::{TestContext, COBBLE},
+  };
 
   #[test]
   fn test_neighbors_block_types() {

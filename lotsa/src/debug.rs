@@ -76,12 +76,12 @@ impl Debugger {
         '\n' => {
           x = 0;
           y += 1;
-        }
+        },
         _ => {
           let bt = self.char_block_types[&chr];
           c.set_block_type(ChunkPos::new(x, y, 0), bt);
           x += 1;
-        }
+        },
       }
     }
   }

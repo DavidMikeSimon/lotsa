@@ -5,8 +5,7 @@ use std::{
   time::{Duration, Instant},
 };
 
-use actix::prelude::*;
-use actix::*;
+use actix::{prelude::*, *};
 use actix_files as fs;
 use actix_web::{web, HttpRequest};
 use actix_web_actors::ws;
@@ -195,9 +194,7 @@ impl StreamHandler<ws::Message, ws::ProtocolError> for WebsocketSession {
 impl Handler<ServerMessage> for WebsocketSession {
   type Result = ();
 
-  fn handle(&mut self, msg: ServerMessage, ctx: &mut Self::Context) {
-    ctx.binary(msg.bytes);
-  }
+  fn handle(&mut self, msg: ServerMessage, ctx: &mut Self::Context) { ctx.binary(msg.bytes); }
 }
 
 type HttpResult = Result<actix_web::HttpResponse, actix_web::Error>;
@@ -218,9 +215,7 @@ struct WebCommon {
 pub struct Server {}
 
 impl Server {
-  pub fn new() -> Server {
-    Server {}
-  }
+  pub fn new() -> Server { Server {} }
 
   pub fn start(&self) -> std::io::Result<()> {
     if let Err(_) = std::env::var("RUST_LOG") {
