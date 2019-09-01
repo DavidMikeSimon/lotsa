@@ -9,15 +9,26 @@ use crate::{
 };
 
 pub struct Simulator {
-  updaters: HashMap<BlockType, Vec<Updater>>,
+  updaters: HashMap<BlockType, Vec<Box<Updater>>>,
 }
 
-pub struct Updater {}
+// TODO: Use a builder pattern so that Updater doesn't need to have an Option
+pub struct Updater {
+  updater_fn: Option<Box<dyn Fn(&UpdaterHandle) -> Option<BlockType>>>,
+}
 
 impl Updater {
-  fn new(target: BlockType) -> Updater { Updater {} }
+  fn new() -> Updater { Updater { updater_fn: None } }
 
-  fn run(&self, chunk: &Chunk, pos: &ChunkPos) -> Option<BlockType> { None }
+  fn run(&self, chunk: &Chunk, pos: ChunkPos) -> Option<BlockType> {
+    let handle = UpdaterHandle {
+      context: UpdaterContext {
+        chunk,
+        chunk_pos: pos,
+      },
+    };
+    self.updater_fn.as_ref().unwrap()(&handle)
+  }
 
   pub fn prepare_query<Q, T>(&self, query: &Q) -> LinkedQuery<Q, T>
   where
@@ -26,7 +37,9 @@ impl Updater {
     LinkedQuery::new(query)
   }
 
-  pub fn implement(&self, updater_fn: impl Fn(&UpdaterHandle) -> Option<BlockType>) {}
+  pub fn implement(&mut self, updater_fn: impl Fn(&UpdaterHandle) -> Option<BlockType> + 'static) {
+    self.updater_fn = Some(Box::new(updater_fn))
+  }
 }
 
 pub struct LinkedQuery<Q, T>
@@ -49,11 +62,11 @@ where
   }
 }
 
-pub struct UpdaterHandle {
-  context: UpdaterContext,
+pub struct UpdaterHandle<'a> {
+  context: UpdaterContext<'a>,
 }
 
-impl UpdaterHandle {
+impl<'a> UpdaterHandle<'a> {
   pub fn query<Q, T>(&self, linked_query: &LinkedQuery<Q, T>) -> T
   where
     Q: Query<T>,
@@ -62,13 +75,18 @@ impl UpdaterHandle {
   }
 }
 
-struct UpdaterContext {}
+struct UpdaterContext<'a> {
+  chunk: &'a Chunk,
+  chunk_pos: ChunkPos,
+}
 
-impl Context for UpdaterContext {
-  fn get_block(&self, pos: RelativePos) -> BlockInfo {
-    // TODO
-    BlockInfo {
-      block_type: UNKNOWN,
+impl<'a> Context for UpdaterContext<'a> {
+  fn get_block(&self, rel_pos: RelativePos) -> BlockInfo {
+    match self.chunk_pos.offset(rel_pos) {
+      Some(pos) => self.chunk.get_block(pos),
+      None => BlockInfo {
+        block_type: UNKNOWN,
+      },
     }
   }
 }
@@ -87,7 +105,7 @@ impl Simulator {
   }
 
   pub fn add_updater(&mut self, target: BlockType, setup_fn: fn(&mut Updater)) {
-    let mut updater = Updater::new(target);
+    let mut updater = Box::new(Updater::new());
     setup_fn(&mut updater);
     self
       .updaters
@@ -102,7 +120,7 @@ impl Simulator {
     for (pos, block) in chunk.blocks_iter() {
       if let Some(updaters) = self.updaters.get(&block.block_type) {
         for updater in updaters {
-          if let Some(new_block_type) = updater.run(&chunk, &pos) {
+          if let Some(new_block_type) = updater.run(&chunk, pos) {
             updates.push(BlockTypeUpdate {
               pos,
               block_type: new_block_type,

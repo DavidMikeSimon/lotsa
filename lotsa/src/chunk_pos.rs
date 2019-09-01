@@ -1,4 +1,7 @@
-use crate::chunk::{CHUNK_WIDTH, CHUNK_WIDTH_E2, CHUNK_WIDTH_E3};
+use crate::{
+  chunk::{CHUNK_WIDTH, CHUNK_WIDTH_E2, CHUNK_WIDTH_E3},
+  relative_pos::RelativePos,
+};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ChunkPos {
@@ -41,6 +44,37 @@ impl ChunkPos {
       true
     }
   }
+
+  pub fn offset(&self, r: RelativePos) -> Option<ChunkPos> {
+    let self_x = self.x() as i8;
+    if r.x < 0 && r.x.abs() > self_x {
+      return None;
+    }
+    let x = (self_x + r.x) as u8;
+    if x >= CHUNK_WIDTH {
+      return None;
+    }
+
+    let self_y = self.y() as i8;
+    if r.y < 0 && r.y.abs() > self_y {
+      return None;
+    }
+    let y = (self_y + r.y) as u8;
+    if y >= CHUNK_WIDTH {
+      return None;
+    }
+
+    let self_z = self.z() as i8;
+    if r.z < 0 && r.z.abs() > self_z {
+      return None;
+    }
+    let z = (self_z + r.z) as u8;
+    if z >= CHUNK_WIDTH {
+      return None;
+    }
+
+    Some(ChunkPos::new(x, y, z))
+  }
 }
 
 #[cfg(test)]
@@ -68,5 +102,29 @@ mod tests {
     assert_eq!(p.x(), 15);
     assert_eq!(p.y(), 15);
     assert_eq!(p.z(), 15);
+  }
+
+  #[test]
+  fn test_offset() {
+    let p = ChunkPos::new(1, 2, 3);
+
+    assert_eq!(
+      Some(ChunkPos::new(9, 8, 7)),
+      p.offset(RelativePos::new(8, 6, 4))
+    );
+
+    assert_eq!(
+      Some(ChunkPos::new(0, 1, 1)),
+      p.offset(RelativePos::new(-1, -1, -2))
+    );
+
+    assert_eq!(
+      Some(ChunkPos::new(31, 2, 3)),
+      p.offset(RelativePos::new(30, 0, 0))
+    );
+
+    assert_eq!(None, p.offset(RelativePos::new(-2, 0, 0)));
+
+    assert_eq!(None, p.offset(RelativePos::new(31, 0, 0)));
   }
 }

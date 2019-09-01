@@ -1,7 +1,7 @@
 use crate::{
   block::{BlockType, EMPTY},
   query::{Chebyshev2DNeighbors, GetBlockType},
-  sim::Simulator,
+  sim::{Simulator, UpdaterHandle},
 };
 
 pub const LIFE: BlockType = BlockType(3);
@@ -14,7 +14,7 @@ pub fn init(sim: &mut Simulator) {
   sim.add_updater(LIFE, |updater| {
     let neighbor_block_types =
       updater.prepare_query(&Chebyshev2DNeighbors::new(1, &GetBlockType::new()));
-    updater.implement(|handle| {
+    updater.implement(move |handle: &UpdaterHandle| {
       let nearby = live_neighbors(handle.query(&neighbor_block_types));
       if nearby >= 2 && nearby <= 4 {
         None
@@ -27,7 +27,7 @@ pub fn init(sim: &mut Simulator) {
   sim.add_updater(EMPTY, |updater| {
     let neighbor_block_types =
       updater.prepare_query(&Chebyshev2DNeighbors::new(1, &GetBlockType::new()));
-    updater.implement(move |handle| {
+    updater.implement(move |handle: &UpdaterHandle| {
       let nearby = live_neighbors(handle.query(&neighbor_block_types));
       if nearby == 3 {
         Some(LIFE)
@@ -62,7 +62,6 @@ mod tests {
     init(&mut sim);
 
     sim.step(&mut chunk);
-    print!("{:?}", debugger.dump(&chunk));
     debugger.assert_match(
       &chunk,
       ".....
@@ -91,10 +90,10 @@ mod tests {
     debugger.load(
       &mut base_chunk,
       ".....
-         .....
-         .LLL.
-         .....
-         .....",
+       .....
+       .LLL.
+       .....
+       .....",
     );
 
     b.iter(|| {
