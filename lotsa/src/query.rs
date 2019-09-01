@@ -1,4 +1,5 @@
 use std::cmp::max;
+use std::fmt::Debug;
 use std::marker::PhantomData;
 
 use crate::{block::BlockType, relative_pos::RelativePos};
@@ -19,8 +20,18 @@ pub trait Context {
   fn get_block(&self, pos: RelativePos) -> BlockInfo;
 }
 
-pub trait Query<'a, T> {
-  fn eval(&self, n: &'a Context, pos: RelativePos) -> T;
+pub trait GenericQuery : Debug {
+}
+
+impl PartialEq for GenericQuery {
+  fn eq(&self, other: &Self) -> bool {
+    false
+  }
+}
+
+pub trait Query<T> : GenericQuery + Clone + PartialEq 
+{
+  fn eval<'a>(&self, n: &'a Context, pos: RelativePos) -> T where T: 'a;
 
   fn cacheability(&self) -> Cacheability {
     DontCache
@@ -129,5 +140,18 @@ mod tests {
         }
       }
     }
+  }
+
+  #[test]
+  fn test_generic_query_equality() {
+    let one: &GenericQuery = &Constant::new(1);
+    let two: &GenericQuery = &Constant::new(2);
+    let get_block_type: &GenericQuery = &GetBlockType::new();
+
+    assert_eq!(one, two);
+    assert_eq!(get_block_type, get_block_type);
+
+    assert_ne!(one, two);
+    assert_ne!(one, get_block_type);
   }
 }

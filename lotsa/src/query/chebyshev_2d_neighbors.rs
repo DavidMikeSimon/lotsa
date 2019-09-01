@@ -1,37 +1,45 @@
+use std::cmp::PartialEq;
+use std::fmt;
 use std::marker::PhantomData;
 
 use crate::{query::*, relative_pos::*};
 
-pub struct Chebyshev2DNeighbors<'a, T, E>
+pub struct Chebyshev2DNeighbors<T, E>
 where
-  E: Query<'a, T>,
+  E: Query<T>,
 {
   distance: u8,
-  map_expr: &'a E,
-  phantom: PhantomData<T>,
+  map_expr: E,
+  _phantom: PhantomData<T>,
 }
 
-impl<'a, T, E> Chebyshev2DNeighbors<'a, T, E>
+impl<T, E> Chebyshev2DNeighbors<T, E>
 where
-  E: Query<'a, T>,
+  E: Query<T>,
 {
-  pub fn new(distance: u8, map_expr: &'a E) -> Chebyshev2DNeighbors<'a, T, E> {
+  pub fn new(distance: u8, map_expr: &E) -> Chebyshev2DNeighbors<T, E> {
     if distance > 127 {
       panic!("Distance must be <= 127")
     }
     Chebyshev2DNeighbors {
       distance,
-      map_expr,
-      phantom: PhantomData,
+      map_expr: map_expr.clone(),
+      _phantom: PhantomData,
     }
   }
 }
 
-impl<'a, T, E> Query<'a, Box<Iterator<Item = T> + 'a>> for Chebyshev2DNeighbors<'a, T, E>
+impl<T, E> GenericQuery for Chebyshev2DNeighbors<T, E>
 where
-  E: Query<'a, T>,
+  E: Query<T>,
 {
-  fn eval(&self, n: &'a Context, pos: RelativePos) -> Box<Iterator<Item = T> + 'a> {
+}
+
+impl<T, E> Query<Box<Iterator<Item = T>>> for Chebyshev2DNeighbors<T, E>
+where
+  E: Query<T>,
+{
+  fn eval<'a>(&self, n: &'a Context, pos: RelativePos) -> Box<Iterator<Item = T>> where Box<Iterator<Item = T>>: 'a {
     let distance = self.distance;
     let map_expr = self.map_expr;
     Box::new(
@@ -55,6 +63,40 @@ where
         fields: map_expr_cacheability.fields().to_vec(),
       },
     }
+  }
+}
+
+impl<T, E> Clone for Chebyshev2DNeighbors<T, E>
+where
+  E: Query<T>,
+{
+  fn clone(self: &Self) -> Self {
+    Chebyshev2DNeighbors {
+      distance: self.distance,
+      map_expr: self.map_expr.clone(),
+      _phantom: PhantomData
+    }
+  }
+}
+
+impl<T, E> fmt::Debug for Chebyshev2DNeighbors<T, E>
+where
+  E: Query<T>,
+{
+  fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+    fmt.debug_struct("Chebyshev2DNeighbors")
+      .field("distance", &self.distance)
+      .field("map_expr", &self.map_expr)
+      .finish()
+  }
+}
+
+impl<T, E> PartialEq for Chebyshev2DNeighbors<T, E>
+where
+  E: Query<T>,
+{
+  fn eq(&self, other: &Self) -> bool {
+    self.distance == other.distance && self.map_expr == other.map_expr
   }
 }
 

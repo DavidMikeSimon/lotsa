@@ -1,38 +1,74 @@
+use std::fmt;
 use crate::{query::*, relative_pos::*};
 
-pub struct Equals<'a, T: PartialEq, L: Query<'a, T>, R: Query<'a, T>> {
-  left: &'a L,
-  right: &'a R,
-  phantom: PhantomData<T>,
+#[derive(Clone)]
+pub struct Equals<T: PartialEq, L: Query<T>, R: Query<T>> {
+  left: L,
+  right: R,
+  _phantom: PhantomData<T>,
 }
 
-impl<'a, T, L, R> Equals<'a, T, L, R>
+impl<T, L, R> Equals<T, L, R>
 where
-  T: PartialEq,
-  L: Query<'a, T>,
-  R: Query<'a, T>,
+  T: Clone + PartialEq,
+  L: Query<T>,
+  R: Query<T>,
 {
-  pub fn new(left: &'a L, right: &'a R) -> Equals<'a, T, L, R> {
+  pub fn new(left: &L, right: &R) -> Equals<T, L, R> {
     Equals {
-      left,
-      right,
-      phantom: PhantomData,
+      left: left.clone(),
+      right: right.clone(),
+      _phantom: PhantomData,
     }
   }
 }
 
-impl<'a, T, L, R> Query<'a, bool> for Equals<'a, T, L, R>
+impl<T, L, R> GenericQuery for Equals<T, L, R>
 where
-  T: PartialEq,
-  L: Query<'a, T>,
-  R: Query<'a, T>,
+  T: Clone + PartialEq,
+  L: Query<T>,
+  R: Query<T>,
 {
-  fn eval(&self, n: &'a Context, pos: RelativePos) -> bool {
+}
+
+impl<T, L, R> Query<bool> for Equals<T, L, R>
+where
+  T: Clone + PartialEq,
+  L: Query<T>,
+  R: Query<T>,
+{
+  fn eval<'a>(&self, n: &Context, pos: RelativePos) -> bool where bool: 'a {
     self.left.eval(n, pos) == self.right.eval(n, pos)
   }
 
   fn cacheability(&self) -> Cacheability {
     Cacheability::merge(&self.left.cacheability(), &self.right.cacheability())
+  }
+}
+
+impl<T, L, R> fmt::Debug for Equals<T, L, R>
+where
+  T: Clone + PartialEq,
+  L: Query<T>,
+  R: Query<T>,
+{
+  fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+    fmt.debug_struct("Equals")
+      .field("left", &self.left)
+      .field("right", &self.right)
+      .finish()
+  }
+}
+
+impl<T, L, R> PartialEq for Equals<T, L, R>
+where
+  T: Clone + PartialEq,
+  L: Query<T>,
+  R: Query<T>,
+{
+  fn eq(&self, other: &Self) -> bool {
+    // TODO: This should be commutative, but Rust won't let me compare L with R
+    self.left == other.left && self.right == other.right
   }
 }
 

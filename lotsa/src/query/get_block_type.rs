@@ -1,5 +1,6 @@
 use crate::{query::*, relative_pos::*};
 
+#[derive(Clone, Debug, PartialEq)]
 pub struct GetBlockType {}
 
 impl GetBlockType {
@@ -14,8 +15,11 @@ impl Default for GetBlockType {
   }
 }
 
-impl<'a> Query<'a, BlockType> for GetBlockType {
-  fn eval(&self, n: &'a Context, pos: RelativePos) -> BlockType {
+impl GenericQuery for GetBlockType {
+}
+
+impl Query<BlockType> for GetBlockType {
+  fn eval<'a>(&self, n: &Context, pos: RelativePos) -> BlockType where BlockType: 'a {
     n.get_block(pos).block_type
   }
 
