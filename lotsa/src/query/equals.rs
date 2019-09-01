@@ -1,8 +1,7 @@
-use std::fmt;
 use crate::{query::*, relative_pos::*};
+use std::fmt;
 
-#[derive(Clone)]
-pub struct Equals<T: PartialEq, L: Query<T>, R: Query<T>> {
+pub struct Equals<T, L, R> {
   left: L,
   right: R,
   _phantom: PhantomData<T>,
@@ -10,7 +9,7 @@ pub struct Equals<T: PartialEq, L: Query<T>, R: Query<T>> {
 
 impl<T, L, R> Equals<T, L, R>
 where
-  T: Clone + PartialEq,
+  T: PartialEq,
   L: Query<T>,
   R: Query<T>,
 {
@@ -25,35 +24,47 @@ where
 
 impl<T, L, R> GenericQuery for Equals<T, L, R>
 where
-  T: Clone + PartialEq,
   L: Query<T>,
   R: Query<T>,
 {
+  fn cacheability(&self) -> Cacheability {
+    Cacheability::merge(&self.left.cacheability(), &self.right.cacheability())
+  }
 }
 
 impl<T, L, R> Query<bool> for Equals<T, L, R>
 where
-  T: Clone + PartialEq,
+  T: PartialEq,
   L: Query<T>,
   R: Query<T>,
 {
   fn eval(&self, n: &Context, pos: RelativePos) -> bool {
     self.left.eval(n, pos) == self.right.eval(n, pos)
   }
+}
 
-  fn cacheability(&self) -> Cacheability {
-    Cacheability::merge(&self.left.cacheability(), &self.right.cacheability())
+impl<T, L, R> Clone for Equals<T, L, R>
+where
+  L: Query<T>,
+  R: Query<T>,
+{
+  fn clone(self: &Self) -> Self {
+    Equals {
+      left: self.left.clone(),
+      right: self.right.clone(),
+      _phantom: PhantomData,
+    }
   }
 }
 
 impl<T, L, R> fmt::Debug for Equals<T, L, R>
 where
-  T: Clone + PartialEq,
   L: Query<T>,
   R: Query<T>,
 {
   fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-    fmt.debug_struct("Equals")
+    fmt
+      .debug_struct("Equals")
       .field("left", &self.left)
       .field("right", &self.right)
       .finish()
@@ -62,7 +73,6 @@ where
 
 impl<T, L, R> PartialEq for Equals<T, L, R>
 where
-  T: Clone + PartialEq,
   L: Query<T>,
   R: Query<T>,
 {

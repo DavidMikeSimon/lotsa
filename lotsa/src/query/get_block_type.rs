@@ -16,17 +16,16 @@ impl Default for GetBlockType {
 }
 
 impl GenericQuery for GetBlockType {
+  fn cacheability(&self) -> Cacheability {
+    UntilChangeInSelf {
+      fields: vec![CacheableBlockType],
+    }
+  }
 }
 
 impl Query<BlockType> for GetBlockType {
   fn eval(&self, n: &Context, pos: RelativePos) -> BlockType {
     n.get_block(pos).block_type
-  }
-
-  fn cacheability(&self) -> Cacheability {
-    UntilChangeInSelf {
-      fields: vec![CacheableBlockType],
-    }
   }
 }
 

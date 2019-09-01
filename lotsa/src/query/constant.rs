@@ -1,18 +1,12 @@
-use std::fmt::Debug;
 use crate::{query::*, relative_pos::*};
+use std::fmt::Debug;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Constant<T>
-where
-  T: Copy + Debug + PartialEq,
-{
+pub struct Constant<T> {
   value: T,
 }
 
-impl<T> Constant<T>
-where
-  T: Copy + Debug + PartialEq,
-{
+impl<T> Constant<T> {
   pub fn new(value: T) -> Constant<T> {
     Constant { value }
   }
@@ -20,8 +14,11 @@ where
 
 impl<T> GenericQuery for Constant<T>
 where
-  T: Copy + Debug + PartialEq,
+  T: Debug,
 {
+  fn cacheability(&self) -> Cacheability {
+    Forever
+  }
 }
 
 impl<T> Query<T> for Constant<T>
@@ -30,10 +27,6 @@ where
 {
   fn eval(&self, _n: &Context, _pos: RelativePos) -> T {
     self.value
-  }
-
-  fn cacheability(&self) -> Cacheability {
-    Forever
   }
 }
 

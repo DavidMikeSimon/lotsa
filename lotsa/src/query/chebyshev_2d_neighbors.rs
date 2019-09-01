@@ -4,10 +4,7 @@ use std::marker::PhantomData;
 
 use crate::{query::*, relative_pos::*};
 
-pub struct Chebyshev2DNeighbors<T, E>
-where
-  E: Query<T>,
-{
+pub struct Chebyshev2DNeighbors<T, E> {
   distance: u8,
   map_expr: E,
   _phantom: PhantomData<T>,
@@ -33,26 +30,6 @@ impl<T, E> GenericQuery for Chebyshev2DNeighbors<T, E>
 where
   E: Query<T>,
 {
-}
-
-impl<T, E> Query<Vec<T>> for Chebyshev2DNeighbors<T, E>
-where
-  E: Query<T>,
-{
-  fn eval(&self, n: &Context, pos: RelativePos) -> Vec<T> {
-    let d = self.distance;
-    Box::new(
-      (-(d as i8)..=(d as i8)).flat_map(move |y_offset| {
-        (-(d as i8)..=(d as i8)).map(move |x_offset| {
-          self.map_expr.eval(
-            n,
-            RelativePos::new(x_offset + pos.x, y_offset + pos.y, pos.z),
-          )
-        })
-      }),
-    ).collect()
-  }
-
   fn cacheability(&self) -> Cacheability {
     match self.map_expr.cacheability() {
       DontCache => DontCache,
@@ -65,6 +42,24 @@ where
   }
 }
 
+impl<T, E> Query<Vec<T>> for Chebyshev2DNeighbors<T, E>
+where
+  E: Query<T>,
+{
+  fn eval(&self, n: &Context, pos: RelativePos) -> Vec<T> {
+    let d = self.distance;
+    Box::new((-(d as i8)..=(d as i8)).flat_map(move |y_offset| {
+      (-(d as i8)..=(d as i8)).map(move |x_offset| {
+        self.map_expr.eval(
+          n,
+          RelativePos::new(x_offset + pos.x, y_offset + pos.y, pos.z),
+        )
+      })
+    }))
+    .collect()
+  }
+}
+
 impl<T, E> Clone for Chebyshev2DNeighbors<T, E>
 where
   E: Query<T>,
@@ -73,7 +68,7 @@ where
     Chebyshev2DNeighbors {
       distance: self.distance,
       map_expr: self.map_expr.clone(),
-      _phantom: PhantomData
+      _phantom: PhantomData,
     }
   }
 }
@@ -83,7 +78,8 @@ where
   E: Query<T>,
 {
   fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-    fmt.debug_struct("Chebyshev2DNeighbors")
+    fmt
+      .debug_struct("Chebyshev2DNeighbors")
       .field("distance", &self.distance)
       .field("map_expr", &self.map_expr)
       .finish()
@@ -115,13 +111,11 @@ mod tests {
     let get_neighbor_types = Chebyshev2DNeighbors::new(1, &get_block_type);
     assert_eq!(
       vec![UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, COBBLE, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN],
-      get_neighbor_types
-        .eval(&context, origin)
+      get_neighbor_types.eval(&context, origin)
     );
     assert_eq!(
       vec![UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, COBBLE, UNKNOWN, UNKNOWN, UNKNOWN],
-      get_neighbor_types
-        .eval(&context, west)
+      get_neighbor_types.eval(&context, west)
     );
 
     assert_eq!(
@@ -144,8 +138,7 @@ mod tests {
     let get_neighbor_cobbleness = Chebyshev2DNeighbors::new(1, &equals_cobble);
     assert_eq!(
       vec![false, false, false, false, true, false, false, false, false],
-      get_neighbor_cobbleness
-        .eval(&context, origin)
+      get_neighbor_cobbleness.eval(&context, origin)
     );
 
     assert_eq!(
@@ -173,8 +166,7 @@ mod tests {
     expected_bools.extend_from_slice(&[false; 12]);
     assert_eq!(
       expected_bools,
-      get_distant_neighbor_cobbleness
-        .eval(&context, origin)
+      get_distant_neighbor_cobbleness.eval(&context, origin)
     );
 
     assert_eq!(
@@ -208,8 +200,7 @@ mod tests {
         vec![UNKNOWN, COBBLE, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN],
         vec![COBBLE, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN],
       ],
-      get_neighbors_neighbor_types
-        .eval(&context, origin)
+      get_neighbors_neighbor_types.eval(&context, origin)
     );
 
     assert_eq!(
