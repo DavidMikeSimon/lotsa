@@ -1,34 +1,41 @@
 use crate::{
   block::{BlockType, EMPTY},
+  query::{Chebyshev2DNeighbors, GetBlockType},
   sim::Simulator,
 };
 
 pub const LIFE: BlockType = BlockType(3);
 
-fn live_neighbors(neighbors: &[BlockType]) -> usize {
+fn live_neighbors(neighbors: Vec<BlockType>) -> usize {
   neighbors.iter().filter(|&&b| b == LIFE).count()
 }
 
-fn update_life_block_type(_this: BlockType, neighbors: &[BlockType]) -> Option<BlockType> {
-  let nearby = live_neighbors(neighbors);
-  if nearby >= 2 && nearby <= 4 {
-    None
-  } else {
-    Some(EMPTY)
-  }
-}
-
-fn update_empty_block_type(_this: BlockType, neighbors: &[BlockType]) -> Option<BlockType> {
-  if live_neighbors(neighbors) == 3 {
-    Some(LIFE)
-  } else {
-    None
-  }
-}
-
 pub fn init(sim: &mut Simulator) {
-  sim.add_updater(LIFE, update_life_block_type);
-  sim.add_updater(EMPTY, update_empty_block_type);
+  sim.add_updater(LIFE, |updater| {
+    let neighbor_block_types =
+      updater.prepare_query(&Chebyshev2DNeighbors::new(1, &GetBlockType::new()));
+    updater.implement(|handle| {
+      let nearby = live_neighbors(handle.query(&neighbor_block_types));
+      if nearby >= 2 && nearby <= 4 {
+        None
+      } else {
+        Some(EMPTY)
+      }
+    });
+  });
+
+  sim.add_updater(EMPTY, |updater| {
+    let neighbor_block_types =
+      updater.prepare_query(&Chebyshev2DNeighbors::new(1, &GetBlockType::new()));
+    updater.implement(move |handle| {
+      let nearby = live_neighbors(handle.query(&neighbor_block_types));
+      if nearby == 3 {
+        Some(LIFE)
+      } else {
+        None
+      }
+    });
+  });
 }
 
 #[cfg(test)]
