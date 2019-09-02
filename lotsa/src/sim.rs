@@ -30,11 +30,11 @@ impl Updater {
     self.updater_fn.as_ref().unwrap()(&handle)
   }
 
-  pub fn prepare_query<Q, T>(&self, query: &Q) -> LinkedQuery<Q, T>
+  pub fn prepare_query<'a, Q, T>(&'a self, query: &Q) -> PreparedQuery<'a, Q, T>
   where
     Q: Query<T>,
   {
-    LinkedQuery::new(query)
+    PreparedQuery::new(self, query)
   }
 
   pub fn implement(&mut self, updater_fn: impl Fn(&UpdaterHandle) -> Option<BlockType> + 'static) {
@@ -42,21 +42,23 @@ impl Updater {
   }
 }
 
-pub struct LinkedQuery<Q, T>
+pub struct PreparedQuery<'a, Q, T>
 where
   Q: Query<T>,
 {
   query: Q,
+  _updater: &'a Updater,
   _phantom: PhantomData<T>,
 }
 
-impl<Q, T> LinkedQuery<Q, T>
+impl<'a, Q, T> PreparedQuery<'a, Q, T>
 where
   Q: Query<T>,
 {
-  fn new(query: &Q) -> LinkedQuery<Q, T> {
-    LinkedQuery {
+  fn new(updater: &'a Updater, query: &Q) -> PreparedQuery<'a, Q, T> {
+    PreparedQuery {
       query: query.clone(),
+      _updater: updater,
       _phantom: PhantomData,
     }
   }
@@ -67,7 +69,7 @@ pub struct UpdaterHandle<'a> {
 }
 
 impl<'a> UpdaterHandle<'a> {
-  pub fn query<Q, T>(&self, linked_query: &LinkedQuery<Q, T>) -> T
+  pub fn query<Q, T>(&self, linked_query: &PreparedQuery<Q, T>) -> T
   where
     Q: Query<T>,
   {
