@@ -21,6 +21,8 @@ extern crate serde_big_array;
 #[cfg(test)]
 extern crate test;
 
+extern crate lazy_static;
+
 pub mod block;
 pub mod chunk;
 pub mod chunk_pos;

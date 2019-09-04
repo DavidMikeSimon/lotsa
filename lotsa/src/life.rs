@@ -1,7 +1,11 @@
+use lazy_static::lazy_static;
+
+use std::sync::RwLock;
+
 use crate::{
   block::{BlockType, EMPTY},
   query::{Chebyshev2DNeighbors, GetBlockType},
-  sim::{LinkedQuery, Simulator, UpdaterHandle},
+j sim::{PreparedQuery, Simulator, UpdaterHandle},
 };
 
 pub const LIFE: BlockType = BlockType(3);
@@ -10,33 +14,38 @@ fn live_blocks_here(neighbors: Vec<BlockType>) -> usize {
   neighbors.iter().filter(|&&b| b == LIFE).count()
 }
 
-pub static mut Q: Option<LinkedQuery<Chebyshev2DNeighbors<BlockType, GetBlockType>, Vec<BlockType>>> = None;
+lazy_static! {
+  static ref Q: RwLock<Option<PreparedQuery<Chebyshev2DNeighbors<BlockType, GetBlockType>, Vec<BlockType>>>> = RwLock::new(None);
+}
 
 pub fn init(sim: &mut Simulator) {
   sim.add_updater(LIFE, |updater| {
     let neighbor_block_types =
       updater.prepare_query(&Chebyshev2DNeighbors::new(1, &GetBlockType::new()));
-    unsafe {
-      // TODO: Prevent this at compile time
-      Q = Some(neighbor_block_types);
-    }
+    *(Q.write().unwrap()) = Some(neighbor_block_types);
     updater.implement(move |handle: &UpdaterHandle| {
-      unsafe {
-        let nearby = live_blocks_here(handle.query(&Q.as_ref().unwrap())) - 1;
-        if nearby >= 2 && nearby <= 4 {
-          None
-        } else {
-          Some(EMPTY)
-        }
+      /*
+       * let nearby = live_blocks_here(handle.query(&neighbor_block_types)) - 1;
+       */
+      let nearby = live_blocks_here(handle.query(&Q.read().unwrap().as_ref().unwrap())) - 1;
+      if nearby >= 2 && nearby <= 4 {
+        None
+      } else {
+        Some(EMPTY)
       }
     });
   });
 
   sim.add_updater(EMPTY, |updater| {
-    let neighbor_block_types =
-      updater.prepare_query(&Chebyshev2DNeighbors::new(1, &GetBlockType::new()));
+    /*
+     * let neighbor_block_types =
+     *   updater.prepare_query(&Chebyshev2DNeighbors::new(1, &GetBlockType::new()));
+     */
     updater.implement(move |handle: &UpdaterHandle| {
-      let nearby = live_blocks_here(handle.query(&neighbor_block_types));
+      /*
+       * let nearby = live_blocks_here(handle.query(&neighbor_block_types));
+       */
+      let nearby = live_blocks_here(handle.query(&Q.read().unwrap().as_ref().unwrap()));
       if nearby == 3 {
         Some(LIFE)
       } else {
