@@ -37,7 +37,7 @@ impl Updater {
     PreparedQuery::new(self, query)
   }
 
-  pub fn implement<'a, F>(&'a mut self, updater_fn: F) where F: Fn(&UpdaterHandle) -> Option<BlockType> + 'a {
+  pub fn implement(&mut self, updater_fn: impl Fn(&UpdaterHandle) -> Option<BlockType> + 'static) {
     self.updater_fn = Some(Box::new(updater_fn))
   }
 }

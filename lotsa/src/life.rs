@@ -14,27 +14,31 @@ pub fn init(sim: &mut Simulator) {
   sim.add_updater(LIFE, |updater| {
     let neighbor_block_types =
       updater.prepare_query(&Chebyshev2DNeighbors::new(1, &GetBlockType::new()));
-    updater.implement(move |handle: &UpdaterHandle| {
-      let nearby = live_blocks_here(handle.query(&neighbor_block_types)) - 1;
-      if nearby >= 2 && nearby <= 4 {
-        None
-      } else {
-        Some(EMPTY)
-      }
-    });
+    /*
+     * updater.implement(move |handle: &UpdaterHandle| {
+     *   let nearby = live_blocks_here(handle.query(&neighbor_block_types)) - 1;
+     *   if nearby >= 2 && nearby <= 4 {
+     *     None
+     *   } else {
+     *     Some(EMPTY)
+     *   }
+     * });
+     */
   });
 
   sim.add_updater(EMPTY, |updater| {
     let neighbor_block_types =
       updater.prepare_query(&Chebyshev2DNeighbors::new(1, &GetBlockType::new()));
-    updater.implement(move |handle: &UpdaterHandle| {
-      let nearby = live_blocks_here(handle.query(&neighbor_block_types));
-      if nearby == 3 {
-        Some(LIFE)
-      } else {
-        None
-      }
-    });
+    /*
+     * updater.implement(move |handle: &UpdaterHandle| {
+     *   let nearby = live_blocks_here(handle.query(&neighbor_block_types));
+     *   if nearby == 3 {
+     *     Some(LIFE)
+     *   } else {
+     *     None
+     *   }
+     * });
+     */
   });
 }
 
