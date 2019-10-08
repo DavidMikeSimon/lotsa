@@ -5,7 +5,7 @@ use std::sync::RwLock;
 use crate::{
   block::{BlockType, EMPTY},
   query::{Chebyshev2DNeighbors, GetBlockType},
-j sim::{PreparedQuery, Simulator, UpdaterHandle},
+  sim::{PreparedQuery, Simulator, UpdaterHandle},
 };
 
 pub const LIFE: BlockType = BlockType(3);
