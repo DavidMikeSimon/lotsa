@@ -8,9 +8,9 @@ pub struct Chebyshev2DNeighbors<T, E> {
   _phantom: PhantomData<T>,
 }
 
-impl<T, E> Chebyshev2DNeighbors<T, E>
+impl<'a, T: 'a, E> Chebyshev2DNeighbors<T, E>
 where
-  E: Query<T>,
+  E: Query<'a, T>,
 {
   // TODO: Const
   pub fn new(distance: u8, map_expr: &E) -> Chebyshev2DNeighbors<T, E> {
@@ -25,9 +25,9 @@ where
   }
 }
 
-impl<T, E> GenericQuery for Chebyshev2DNeighbors<T, E>
+impl<'a, T: 'a, E> GenericQuery for Chebyshev2DNeighbors<T, E>
 where
-  E: Query<T>,
+  E: Query<'a, T>,
 {
   fn cacheability(&self) -> Cacheability {
     match self.map_expr.cacheability() {
@@ -41,27 +41,26 @@ where
   }
 }
 
-impl<T, E> Query<Vec<T>> for Chebyshev2DNeighbors<T, E>
+impl<'a, T: 'a, E> Query<'a, Vec<T>> for Chebyshev2DNeighbors<T, E>
 where
-  E: Query<T>,
+  E: Query<'a, T>,
 {
-  fn eval(&self, n: &dyn Context, pos: RelativePos) -> Vec<T> {
-    let d = self.distance;
-    Box::new((-(d as i8)..=(d as i8)).flat_map(move |y_offset| {
-      (-(d as i8)..=(d as i8)).map(move |x_offset| {
+  fn eval(&self, n: &'a dyn Context, pos: RelativePos) -> Vec<T> {
+    let d = self.distance as i8;
+    (-d..=d).flat_map(move |y_offset| {
+      (-d..=d).map(move |x_offset| {
         self.map_expr.eval(
           n,
           RelativePos::new(x_offset + pos.x, y_offset + pos.y, pos.z),
         )
       })
-    }))
-    .collect()
+    }).collect()
   }
 }
 
-impl<T, E> Clone for Chebyshev2DNeighbors<T, E>
+impl<'a, T: 'a, E> Clone for Chebyshev2DNeighbors<T, E>
 where
-  E: Query<T>,
+  E: Query<'a, T>,
 {
   fn clone(self: &Self) -> Self {
     Chebyshev2DNeighbors {
@@ -72,9 +71,9 @@ where
   }
 }
 
-impl<T, E> fmt::Debug for Chebyshev2DNeighbors<T, E>
+impl<'a, T: 'a, E> fmt::Debug for Chebyshev2DNeighbors<T, E>
 where
-  E: Query<T>,
+  E: Query<'a, T>,
 {
   fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
     fmt
@@ -85,9 +84,9 @@ where
   }
 }
 
-impl<T, E> PartialEq for Chebyshev2DNeighbors<T, E>
+impl<'a, T: 'a, E> PartialEq for Chebyshev2DNeighbors<T, E>
 where
-  E: Query<T>,
+  E: Query<'a, T>,
 {
   fn eq(&self, other: &Self) -> bool {
     self.distance == other.distance && self.map_expr == other.map_expr

@@ -17,7 +17,7 @@ where
   fn cacheability(&self) -> Cacheability { Forever }
 }
 
-impl<T> Query<T> for Constant<T>
+impl<'a, T: 'a> Query<'a, T> for Constant<T>
 where
   T: Copy + Debug + PartialEq,
 {

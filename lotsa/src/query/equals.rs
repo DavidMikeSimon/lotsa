@@ -7,11 +7,11 @@ pub struct Equals<T, L, R> {
   _phantom: PhantomData<T>,
 }
 
-impl<T, L, R> Equals<T, L, R>
+impl<'a, T: 'a, L, R> Equals<T, L, R>
 where
   T: PartialEq,
-  L: Query<T>,
-  R: Query<T>,
+  L: Query<'a, T>,
+  R: Query<'a, T>,
 {
   // TODO: Const
   pub fn new(left: &L, right: &R) -> Equals<T, L, R> {
@@ -23,31 +23,31 @@ where
   }
 }
 
-impl<T, L, R> GenericQuery for Equals<T, L, R>
+impl<'a, T: 'a, L, R> GenericQuery for Equals<T, L, R>
 where
-  L: Query<T>,
-  R: Query<T>,
+  L: Query<'a, T>,
+  R: Query<'a, T>,
 {
   fn cacheability(&self) -> Cacheability {
     Cacheability::merge(&self.left.cacheability(), &self.right.cacheability())
   }
 }
 
-impl<T, L, R> Query<bool> for Equals<T, L, R>
+impl<'a, T: 'a, L, R> Query<'a, bool> for Equals<T, L, R>
 where
   T: PartialEq,
-  L: Query<T>,
-  R: Query<T>,
+  L: Query<'a, T>,
+  R: Query<'a, T>,
 {
-  fn eval(&self, n: &dyn Context, pos: RelativePos) -> bool {
+  fn eval(&self, n: &'a dyn Context, pos: RelativePos) -> bool {
     self.left.eval(n, pos) == self.right.eval(n, pos)
   }
 }
 
-impl<T, L, R> Clone for Equals<T, L, R>
+impl<'a, T: 'a, L, R> Clone for Equals<T, L, R>
 where
-  L: Query<T>,
-  R: Query<T>,
+  L: Query<'a, T>,
+  R: Query<'a, T>,
 {
   fn clone(self: &Self) -> Self {
     Equals {
@@ -58,10 +58,10 @@ where
   }
 }
 
-impl<T, L, R> fmt::Debug for Equals<T, L, R>
+impl<'a, T: 'a, L, R> fmt::Debug for Equals<T, L, R>
 where
-  L: Query<T>,
-  R: Query<T>,
+  L: Query<'a, T>,
+  R: Query<'a, T>,
 {
   fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
     fmt
@@ -72,10 +72,10 @@ where
   }
 }
 
-impl<T, L, R> PartialEq for Equals<T, L, R>
+impl<'a, T: 'a, L, R> PartialEq for Equals<T, L, R>
 where
-  L: Query<T>,
-  R: Query<T>,
+  L: Query<'a, T>,
+  R: Query<'a, T>,
 {
   fn eq(&self, other: &Self) -> bool {
     // TODO: This should be commutative, but Rust won't let me compare L with R

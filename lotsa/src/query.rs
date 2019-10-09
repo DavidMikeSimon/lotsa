@@ -22,8 +22,8 @@ pub trait GenericQuery: Debug {
   fn cacheability(&self) -> Cacheability;
 }
 
-pub trait Query<T>: GenericQuery + Clone + PartialEq {
-  fn eval(&self, n: &dyn Context, pos: RelativePos) -> T;
+pub trait Query<'a, T: 'a>: GenericQuery + Clone + PartialEq {
+  fn eval(&self, n: &'a dyn Context, pos: RelativePos) -> T;
 }
 
 #[derive(Clone, Debug)]

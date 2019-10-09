@@ -30,9 +30,9 @@ impl Updater {
     self.updater_fn.as_ref().unwrap()(&handle)
   }
 
-  pub fn prepare_query<Q, T>(&self, query: &Q) -> PreparedQuery<Q, T>
+  pub fn prepare_query<'a, Q, T>(&self, query: &Q) -> PreparedQuery<'a, Q, T>
   where
-    Q: Query<T>,
+    Q: Query<'a, T>,
   {
     PreparedQuery::new(query)
   }
@@ -42,19 +42,19 @@ impl Updater {
   }
 }
 
-pub struct PreparedQuery<Q, T>
+pub struct PreparedQuery<'a, Q, T: 'a>
 where
-  Q: Query<T>,
+  Q: Query<'a, T>,
 {
   query: Q,
-  _phantom: PhantomData<T>,
+  _phantom: PhantomData<&'a T>
 }
 
-impl<Q, T> PreparedQuery<Q, T>
+impl<'a, Q, T> PreparedQuery<'a, Q, T>
 where
-  Q: Query<T>,
+  Q: Query<'a, T>,
 {
-  fn new(query: &Q) -> PreparedQuery<Q, T> {
+  fn new(query: &Q) -> PreparedQuery<'a, Q, T> {
     PreparedQuery {
       query: query.clone(),
       _phantom: PhantomData,
@@ -67,9 +67,9 @@ pub struct UpdaterHandle<'a> {
 }
 
 impl<'a> UpdaterHandle<'a> {
-  pub fn query<Q, T>(&self, linked_query: &PreparedQuery<Q, T>) -> T
+  pub fn query<Q, T: 'a>(&'a self, linked_query: &PreparedQuery<'a, Q, T>) -> T
   where
-    Q: Query<T>,
+    Q: Query<'a, T>,
   {
     linked_query.query.eval(&self.context, RelativePos::here())
   }
