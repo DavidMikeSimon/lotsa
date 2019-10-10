@@ -23,7 +23,7 @@ pub trait GenericQuery: Debug {
 }
 
 pub trait Query<'a, T: 'a>: GenericQuery + Clone + PartialEq {
-  fn eval(&self, n: &'a dyn Context, pos: RelativePos) -> T;
+  fn eval(&'a self, n: &'a dyn Context, pos: RelativePos) -> T;
 }
 
 #[derive(Clone, Debug)]

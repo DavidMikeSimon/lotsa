@@ -41,20 +41,20 @@ where
   }
 }
 
-impl<'a, T: 'a, E> Query<'a, Vec<T>> for Chebyshev2DNeighbors<T, E>
+impl<'a, T: 'a, E: 'a> Query<'a, Box<dyn Iterator<Item = T> + 'a>> for Chebyshev2DNeighbors<T, E>
 where
   E: Query<'a, T>,
 {
-  fn eval(&self, n: &'a dyn Context, pos: RelativePos) -> Vec<T> {
+  fn eval(&'a self, n: &'a dyn Context, pos: RelativePos) -> Box<dyn Iterator<Item = T> + 'a> {
     let d = self.distance as i8;
-    (-d..=d).flat_map(move |y_offset| {
+    Box::new((-d..=d).flat_map(move |y_offset| {
       (-d..=d).map(move |x_offset| {
         self.map_expr.eval(
           n,
           RelativePos::new(x_offset + pos.x, y_offset + pos.y, pos.z),
         )
       })
-    }).collect()
+    }))
   }
 }
 
@@ -111,11 +111,15 @@ mod tests {
     let get_neighbor_types = Chebyshev2DNeighbors::new(1, &get_block_type);
     assert_eq!(
       vec![UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, COBBLE, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN],
-      get_neighbor_types.eval(&context, origin)
+      get_neighbor_types
+        .eval(&context, origin)
+        .collect::<Vec<BlockType>>()
     );
     assert_eq!(
       vec![UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, COBBLE, UNKNOWN, UNKNOWN, UNKNOWN],
-      get_neighbor_types.eval(&context, west)
+      get_neighbor_types
+        .eval(&context, west)
+        .collect::<Vec<BlockType>>()
     );
 
     assert_eq!(
@@ -138,7 +142,9 @@ mod tests {
     let get_neighbor_cobbleness = Chebyshev2DNeighbors::new(1, &equals_cobble);
     assert_eq!(
       vec![false, false, false, false, true, false, false, false, false],
-      get_neighbor_cobbleness.eval(&context, origin)
+      get_neighbor_cobbleness
+        .eval(&context, origin)
+        .collect::<Vec<bool>>()
     );
 
     assert_eq!(
@@ -166,7 +172,9 @@ mod tests {
     expected_bools.extend_from_slice(&[false; 12]);
     assert_eq!(
       expected_bools,
-      get_distant_neighbor_cobbleness.eval(&context, origin)
+      get_distant_neighbor_cobbleness
+        .eval(&context, origin)
+        .collect::<Vec<bool>>()
     );
 
     assert_eq!(
@@ -200,7 +208,10 @@ mod tests {
         vec![UNKNOWN, COBBLE, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN],
         vec![COBBLE, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN],
       ],
-      get_neighbors_neighbor_types.eval(&context, origin)
+      get_neighbors_neighbor_types
+        .eval(&context, origin)
+        .map(Iterator::collect)
+        .collect::<Vec<Vec<BlockType>>>()
     );
 
     assert_eq!(

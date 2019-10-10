@@ -47,7 +47,7 @@ where
   Q: Query<'a, T>,
 {
   query: Q,
-  _phantom: PhantomData<&'a T>
+  _phantom: PhantomData<&'a T>,
 }
 
 impl<'a, Q, T> PreparedQuery<'a, Q, T>
@@ -67,7 +67,7 @@ pub struct UpdaterHandle<'a> {
 }
 
 impl<'a> UpdaterHandle<'a> {
-  pub fn query<Q, T: 'a>(&'a self, linked_query: &PreparedQuery<'a, Q, T>) -> T
+  pub fn query<Q, T: 'a>(&'a self, linked_query: &'a PreparedQuery<'a, Q, T>) -> T
   where
     Q: Query<'a, T>,
   {
