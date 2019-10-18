@@ -10,7 +10,7 @@ build-client:
   wasm-pack build --no-typescript --target web -- --features clientside
 
 run-release: build-release
-  cargo run --features serverside
+  cargo run --release --features serverside
 
 build-release: build-server-release build-client-release
 

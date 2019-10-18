@@ -9,15 +9,9 @@ pub struct RelativePos {
 
 impl RelativePos {
   pub fn new(x: i8, y: i8, z: i8) -> RelativePos {
-    if x.abs() >= CHUNK_WIDTH as i8 {
-      panic!("x is out of range")
-    }
-    if y.abs() >= CHUNK_WIDTH as i8 {
-      panic!("y is out of range")
-    }
-    if z.abs() >= CHUNK_WIDTH as i8 {
-      panic!("z is out of range")
-    }
+    debug_assert!(x.abs() < CHUNK_WIDTH as i8);
+    debug_assert!(y.abs() < CHUNK_WIDTH as i8);
+    debug_assert!(z.abs() < CHUNK_WIDTH as i8);
     RelativePos { x, y, z }
   }
 
