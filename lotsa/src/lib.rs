@@ -25,6 +25,7 @@ pub mod block;
 pub mod chunk;
 pub mod chunk_pos;
 pub mod debug;
+pub mod dirtiness_tracker;
 pub mod life;
 pub mod query;
 pub mod relative_pos;

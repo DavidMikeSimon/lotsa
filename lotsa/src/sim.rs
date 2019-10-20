@@ -1,4 +1,4 @@
-use std::{collections::HashMap, marker::PhantomData};
+use std::{collections::hash_map::DefaultHasher, fmt, hash::{Hash, Hasher}, marker::PhantomData};
 
 use crate::{
   block::{BlockType, UNKNOWN},
@@ -9,7 +9,7 @@ use crate::{
 };
 
 pub struct Simulator {
-  updaters: HashMap<BlockType, Vec<Box<Updater>>>,
+  updaters: Vec<(BlockType, Box<Updater>)>,
 }
 
 // TODO: Use a builder pattern so that Updater doesn't need to have an Option
@@ -47,6 +47,7 @@ where
   Q: Query<'a, T>,
 {
   query: Q,
+  hashcode: u64,
   _phantom: PhantomData<&'a T>,
 }
 
@@ -55,10 +56,36 @@ where
   Q: Query<'a, T>,
 {
   fn new(query: &Q) -> PreparedQuery<'a, Q, T> {
+    let mut hasher = DefaultHasher::new();
+    let desc = format!("{:?}", query);
+    desc.hash(&mut hasher);
+
     PreparedQuery {
       query: query.clone(),
+      hashcode: hasher.finish(),
       _phantom: PhantomData,
     }
+  }
+}
+
+impl<'a, Q, T> fmt::Debug for PreparedQuery<'a, Q, T>
+where
+  Q: Query<'a, T>,
+{
+  fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+    fmt
+      .debug_struct("PreparedQuery")
+      .field("query", &self.query)
+      .finish()
+  }
+}
+
+impl<'a, Q, T> Hash for PreparedQuery<'a, Q, T>
+where
+  Q: Query<'a, T>,
+{
+  fn hash<H: Hasher>(&self, state: &mut H) {
+    self.hashcode.hash(state);
   }
 }
 
@@ -100,26 +127,22 @@ struct BlockTypeUpdate {
 impl Simulator {
   pub fn new() -> Simulator {
     Simulator {
-      updaters: HashMap::new(),
+      updaters: Vec::new(),
     }
   }
 
   pub fn add_updater(&mut self, target: BlockType, setup_fn: fn(&mut Updater)) {
     let mut updater = Box::new(Updater::new());
     setup_fn(&mut updater);
-    self
-      .updaters
-      .entry(target)
-      .or_insert_with(Vec::new)
-      .push(updater);
+    self.updaters.push((target, updater));
   }
 
   pub fn step(&self, chunk: &mut Chunk) {
     let mut updates: Vec<BlockTypeUpdate> = Vec::new();
 
-    for (pos, block) in chunk.blocks_iter() {
-      if let Some(updaters) = self.updaters.get(&block.block_type) {
-        for updater in updaters {
+    for (target_block_type, updater) in self.updaters.iter() {
+      for (pos, block) in chunk.blocks_iter() {
+        if target_block_type == &block.block_type {
           if let Some(new_block_type) = updater.run(&chunk, pos) {
             updates.push(BlockTypeUpdate {
               pos,
