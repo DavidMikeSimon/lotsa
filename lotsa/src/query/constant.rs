@@ -1,25 +1,35 @@
-use crate::{query::*, relative_pos::*};
-use std::fmt::Debug;
+use crate::{query::*, relative_pos::*, unique_descrip::UniqueDescrip};
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct Constant<T> {
+#[derive(Clone)]
+pub struct Constant<T: UniqueDescrip> {
   value: T,
 }
 
-impl<T> Constant<T> {
-  pub const fn new(value: T) -> Constant<T> { Constant { value } }
+impl<T> Constant<T>
+where
+  T: Copy + UniqueDescrip,
+{
+  // TODO: Const?
+  pub fn new(value: T) -> Constant<T> { Constant { value } }
+}
+
+impl<T> UniqueDescrip for Constant<T>
+where
+  T: Copy + UniqueDescrip,
+{
+  fn unique_descrip(&self) -> String { self.value.unique_descrip() }
 }
 
 impl<T> GenericQuery for Constant<T>
 where
-  T: Debug,
+  T: Copy + UniqueDescrip,
 {
   fn cacheability(&self) -> Cacheability { Forever }
 }
 
 impl<'a, T: 'a> Query<'a, T> for Constant<T>
 where
-  T: Copy + Debug + PartialEq,
+  T: Copy + UniqueDescrip,
 {
   fn eval(&self, _n: &dyn Context, _pos: RelativePos) -> T { self.value }
 }

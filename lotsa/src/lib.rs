@@ -30,6 +30,7 @@ pub mod life;
 pub mod query;
 pub mod relative_pos;
 pub mod sim;
+pub mod unique_descrip;
 
 #[cfg(feature = "client")]
 pub mod client;

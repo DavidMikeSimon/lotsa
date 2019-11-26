@@ -1,6 +1,6 @@
-use std::{cmp::max, fmt::Debug, marker::PhantomData};
+use std::{cmp::max, marker::PhantomData};
 
-use crate::{block::BlockType, relative_pos::RelativePos};
+use crate::{block::BlockType, relative_pos::RelativePos, unique_descrip::UniqueDescrip};
 
 mod chebyshev_2d_neighbors;
 pub use chebyshev_2d_neighbors::*;
@@ -18,11 +18,11 @@ pub trait Context {
   fn get_block(&self, pos: RelativePos) -> BlockInfo;
 }
 
-pub trait GenericQuery: Debug {
+pub trait GenericQuery: UniqueDescrip {
   fn cacheability(&self) -> Cacheability;
 }
 
-pub trait Query<'a, T: 'a>: GenericQuery + Clone + PartialEq {
+pub trait Query<'a, T: 'a>: GenericQuery + Clone {
   fn eval(&'a self, n: &'a dyn Context, pos: RelativePos) -> T;
 }
 

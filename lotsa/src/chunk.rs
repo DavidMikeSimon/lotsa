@@ -7,8 +7,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
   block::{BlockType, UNKNOWN},
-  dirtiness_tracker::DirtinessTracker,
   chunk_pos::ChunkPos,
+  dirtiness_tracker::DirtinessTracker,
   query::BlockInfo,
 };
 

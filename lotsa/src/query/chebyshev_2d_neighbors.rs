@@ -1,6 +1,6 @@
-use std::{cmp::PartialEq, fmt, marker::PhantomData};
+use std::marker::PhantomData;
 
-use crate::{query::*, relative_pos::*};
+use crate::{query::*, relative_pos::*, unique_descrip::UniqueDescrip};
 
 pub struct Chebyshev2DNeighbors<T, E> {
   distance: u8,
@@ -22,6 +22,19 @@ where
       map_expr: map_expr.clone(),
       _phantom: PhantomData,
     }
+  }
+}
+
+impl<T, E> UniqueDescrip for Chebyshev2DNeighbors<T, E>
+where
+  E: UniqueDescrip,
+{
+  fn unique_descrip(&self) -> String {
+    format!(
+      "Chebyshev2DNeighbors( dist:{}, {} )",
+      self.distance,
+      self.map_expr.unique_descrip()
+    )
   }
 }
 
@@ -68,28 +81,6 @@ where
       map_expr: self.map_expr.clone(),
       _phantom: PhantomData,
     }
-  }
-}
-
-impl<'a, T: 'a, E> fmt::Debug for Chebyshev2DNeighbors<T, E>
-where
-  E: Query<'a, T>,
-{
-  fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-    fmt
-      .debug_struct("Chebyshev2DNeighbors")
-      .field("distance", &self.distance)
-      .field("map_expr", &self.map_expr)
-      .finish()
-  }
-}
-
-impl<'a, T: 'a, E> PartialEq for Chebyshev2DNeighbors<T, E>
-where
-  E: Query<'a, T>,
-{
-  fn eq(&self, other: &Self) -> bool {
-    self.distance == other.distance && self.map_expr == other.map_expr
   }
 }
 

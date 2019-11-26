@@ -1,4 +1,9 @@
-use std::{collections::hash_map::DefaultHasher, fmt, hash::{Hash, Hasher}, marker::PhantomData};
+use std::{
+  collections::hash_map::DefaultHasher,
+  fmt,
+  hash::{Hash, Hasher},
+  marker::PhantomData,
+};
 
 use crate::{
   block::{BlockType, UNKNOWN},
@@ -57,8 +62,7 @@ where
 {
   fn new(query: &Q) -> PreparedQuery<'a, Q, T> {
     let mut hasher = DefaultHasher::new();
-    let desc = format!("{:?}", query);
-    desc.hash(&mut hasher);
+    query.unique_descrip().hash(&mut hasher);
 
     PreparedQuery {
       query: query.clone(),
@@ -72,11 +76,8 @@ impl<'a, Q, T> fmt::Debug for PreparedQuery<'a, Q, T>
 where
   Q: Query<'a, T>,
 {
-  fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-    fmt
-      .debug_struct("PreparedQuery")
-      .field("query", &self.query)
-      .finish()
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    write!(f, "PreparedQuery:{}", self.query.unique_descrip())
   }
 }
 
@@ -84,9 +85,7 @@ impl<'a, Q, T> Hash for PreparedQuery<'a, Q, T>
 where
   Q: Query<'a, T>,
 {
-  fn hash<H: Hasher>(&self, state: &mut H) {
-    self.hashcode.hash(state);
-  }
+  fn hash<H: Hasher>(&self, state: &mut H) { self.hashcode.hash(state); }
 }
 
 pub struct UpdaterHandle<'a> {

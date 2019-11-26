@@ -1,10 +1,14 @@
-use crate::{query::*, relative_pos::*};
+use crate::{query::*, relative_pos::*, unique_descrip::UniqueDescrip};
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone)]
 pub struct GetBlockType {}
 
 impl GetBlockType {
   pub const fn new() -> GetBlockType { GetBlockType {} }
+}
+
+impl UniqueDescrip for GetBlockType {
+  fn unique_descrip(&self) -> String { "GetBlockType".into() }
 }
 
 impl Default for GetBlockType {

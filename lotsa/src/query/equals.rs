@@ -1,5 +1,4 @@
-use crate::{query::*, relative_pos::*};
-use std::fmt;
+use crate::{query::*, relative_pos::*, unique_descrip::UniqueDescrip};
 
 pub struct Equals<T, L, R> {
   left: L,
@@ -20,6 +19,20 @@ where
       right: right.clone(),
       _phantom: PhantomData,
     }
+  }
+}
+
+impl<T, L, R> UniqueDescrip for Equals<T, L, R>
+where
+  L: UniqueDescrip,
+  R: UniqueDescrip,
+{
+  fn unique_descrip(&self) -> String {
+    format!(
+      "Equals( {}, {} )",
+      self.left.unique_descrip(),
+      self.right.unique_descrip()
+    )
   }
 }
 
@@ -55,31 +68,6 @@ where
       right: self.right.clone(),
       _phantom: PhantomData,
     }
-  }
-}
-
-impl<'a, T: 'a, L, R> fmt::Debug for Equals<T, L, R>
-where
-  L: Query<'a, T>,
-  R: Query<'a, T>,
-{
-  fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-    fmt
-      .debug_struct("Equals")
-      .field("left", &self.left)
-      .field("right", &self.right)
-      .finish()
-  }
-}
-
-impl<'a, T: 'a, L, R> PartialEq for Equals<T, L, R>
-where
-  L: Query<'a, T>,
-  R: Query<'a, T>,
-{
-  fn eq(&self, other: &Self) -> bool {
-    // TODO: This should be commutative, but Rust won't let me compare L with R
-    self.left == other.left && self.right == other.right
   }
 }
 
