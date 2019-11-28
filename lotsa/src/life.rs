@@ -96,14 +96,17 @@ mod tests {
        .....",
     );
 
+    let mut sim = Simulator::new();
+    init(&mut sim);
+
     b.iter(|| {
       let mut chunk = base_chunk.clone();
-      let mut sim = Simulator::new();
-      init(&mut sim);
 
-      for _ in 1..10 {
+      for _ in 1..20 {
         sim.step(&mut chunk);
       }
+
+      debugger.dump(&chunk)
     });
   }
 }
