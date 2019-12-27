@@ -58,18 +58,6 @@ mod tests {
   }
 
   #[test]
-  fn test_clear() {
-    let mut index = ChunkIndex::new();
-
-    let pos = ChunkPos::new(0, 1, 2);
-
-    index.mark(pos);
-    assert_eq!(index.consider(pos), true);
-    index.clear();
-    assert_eq!(index.consider(pos), false);
-  }
-
-  #[test]
   fn test_iteration() {
     let mut index = ChunkIndex::new();
 
@@ -87,5 +75,18 @@ mod tests {
     assert!(considerables.contains(&pos_b));
     assert!(considerables.contains(&pos_c));
     assert!(considerables.len() < 8); // Allowed to have false positives
+  }
+
+  #[test]
+  fn test_clear() {
+    let mut index = ChunkIndex::new();
+
+    let pos = ChunkPos::new(0, 1, 2);
+
+    index.mark(pos);
+    assert_eq!(index.consider(pos), true);
+    index.clear();
+    assert_eq!(index.consider(pos), false);
+    assert_eq!(index.iter().collect::<Vec<ChunkPos>>().len(), 0);
   }
 }
