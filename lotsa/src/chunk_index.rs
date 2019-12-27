@@ -1,45 +1,35 @@
-use bitmaps::{Bits, Bitmap};
-use typenum::U1024;
+use roaring::RoaringBitmap;
 
 use crate::{
-  chunk::{CHUNK_WIDTH, CHUNK_WIDTH_E2},
   chunk_pos::ChunkPos,
 };
 
-type ViewBitmapSize = U1024;
-type ViewBitmap = Bitmap<ViewBitmapSize>;
-
 #[derive(Clone)]
 pub struct ChunkIndex {
-  xy_view: ViewBitmap,
-  yz_view: ViewBitmap,
+  index: RoaringBitmap
 }
 
 impl ChunkIndex {
   pub fn new() -> ChunkIndex {
-    //TODO: Static assertion?
-    debug_assert_eq!(
-      std::mem::size_of::<<ViewBitmapSize as Bits>::Store>(),
-      CHUNK_WIDTH_E2/8
-    );
-
     ChunkIndex {
-      xy_view: ViewBitmap::new(),
-      yz_view: ViewBitmap::new(),
+      index: RoaringBitmap::new(),
     }
   }
 
   pub fn mark(&mut self, pos: ChunkPos) {
-    self.xy_view.set((pos.x()*CHUNK_WIDTH + pos.y()) as usize, true);
-    self.yz_view.set((pos.y()*CHUNK_WIDTH + pos.z()) as usize, true);
+    self.index.insert(pos.raw_n() as u32);
   }
 
   pub fn consider(&self, pos: ChunkPos) -> bool {
-    self.xy_view.get((pos.x()*CHUNK_WIDTH + pos.y()) as usize)
-    && self.yz_view.get((pos.y()*CHUNK_WIDTH + pos.z()) as usize)
+    self.index.contains(pos.raw_n() as u32)
   }
 
   pub fn clear(&mut self) {
+    self.index.clear();
+  }
+
+  pub fn iter<'a>(&'a self) -> impl Iterator<Item=ChunkPos> + 'a {
+    self.index.iter().map(|n| ChunkPos::new_from_raw_n(n as u16))
   }
 }
 
@@ -77,5 +67,25 @@ mod tests {
     assert_eq!(index.consider(pos), true);
     index.clear();
     assert_eq!(index.consider(pos), false);
+  }
+
+  #[test]
+  fn test_iteration() {
+    let mut index = ChunkIndex::new();
+
+    let pos_a = ChunkPos::new(0, 1, 2);
+    let pos_b = ChunkPos::new(3, 4, 5);
+    let pos_c = ChunkPos::new(15, 15, 15);
+
+    index.mark(pos_a);
+    index.mark(pos_b);
+    index.mark(pos_c);
+
+    let considerables: Vec<ChunkPos> = index.iter().collect();
+
+    assert!(considerables.contains(&pos_a));
+    assert!(considerables.contains(&pos_b));
+    assert!(considerables.contains(&pos_c));
+    assert!(considerables.len() < 8); // Allowed to have false positives
   }
 }

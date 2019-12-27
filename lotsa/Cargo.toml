@@ -31,13 +31,12 @@ client = [
 
 [dependencies]
 bincode = "1.1"
-bitmaps = "2.0"
 flate2 = "1.0"
 log = "0.4"
 maplit = "1.0"
+roaring = "0.6"
 serde = { version = "1.0", features = ["derive"] }
 serde-big-array = "0.1"
-typenum = "1.1"
 
 # Server-side dependenceis
 actix = { version = "0.8", optional = true }
