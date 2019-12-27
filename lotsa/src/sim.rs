@@ -9,7 +9,7 @@ use crate::{
   block::{BlockType, UNKNOWN},
   chunk::Chunk,
   chunk_pos::ChunkPos,
-  query::{BlockInfo, Context, Query},
+  query::{BlockInfo, Cacheability, Context, Query},
   relative_pos::RelativePos,
 };
 
@@ -17,13 +17,14 @@ pub struct Simulator {
   updaters: Vec<(BlockType, Box<Updater>)>,
 }
 
-// TODO: Use a builder pattern so that Updater doesn't need to have an Option
 pub struct Updater {
+  // TODO: Use a builder pattern so that updater_fn doesn't need to be wrapped in Option
   updater_fn: Option<Box<dyn Fn(&UpdaterHandle) -> Option<BlockType>>>,
+  cacheability: Cacheability
 }
 
 impl Updater {
-  fn new() -> Updater { Updater { updater_fn: None } }
+  fn new() -> Updater { Updater { updater_fn: None, cacheability: Cacheability::Forever } }
 
   fn run(&self, chunk: &Chunk, pos: ChunkPos) -> Option<BlockType> {
     let handle = UpdaterHandle {
@@ -35,10 +36,11 @@ impl Updater {
     self.updater_fn.as_ref().unwrap()(&handle)
   }
 
-  pub fn prepare_query<'a, Q, T>(&self, query: &Q) -> PreparedQuery<'a, Q, T>
+  pub fn prepare_query<'a, Q, T>(&mut self, query: &Q) -> PreparedQuery<'a, Q, T>
   where
     Q: Query<'a, T>,
   {
+    self.cacheability = Cacheability::merge(&self.cacheability, &query.cacheability());
     PreparedQuery::new(query)
   }
 

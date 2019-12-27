@@ -10,15 +10,9 @@ pub struct ChunkPos {
 
 impl ChunkPos {
   pub fn new(x: u8, y: u8, z: u8) -> Self {
-    if x >= CHUNK_WIDTH {
-      panic!("x is out of range")
-    }
-    if y >= CHUNK_WIDTH {
-      panic!("y is out of range")
-    }
-    if z >= CHUNK_WIDTH {
-      panic!("z is out of range")
-    }
+    debug_assert!(x < CHUNK_WIDTH);
+    debug_assert!(y < CHUNK_WIDTH);
+    debug_assert!(z < CHUNK_WIDTH);
     ChunkPos {
       n: ((x as usize) * CHUNK_WIDTH_E2 + (y as usize) * (CHUNK_WIDTH as usize) + (z as usize))
         as u16,

@@ -35,7 +35,7 @@ impl BlockInfo {
   pub fn block_type(&self) -> BlockType { self.block_type }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Cacheability {
   DontCache,
   Forever,
@@ -50,7 +50,7 @@ pub enum Cacheability {
 
 use Cacheability::*;
 
-#[derive(Copy, Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub enum CacheableField {
   CacheableBlockType,
 }
@@ -83,6 +83,9 @@ impl Cacheability {
           fields: CacheableField::merge(fields_a, fields_b),
         }
       },
+      //TODO: This might be non-optimal in some cases, could be better if we
+      // had a Cacheability variant that represented a set, e.g. Vec<Cacheability>,
+      // or if we generally held on to sets of Cacheability rather than singles
       (_, _) => UntilChangeInChebyshevNeighborhood {
         distance: max(a.distance(), b.distance()),
         fields: CacheableField::merge(a.fields(), b.fields()),
@@ -126,19 +129,5 @@ mod tests {
         }
       }
     }
-  }
-
-  #[test]
-  fn test_generic_query_equality() {
-    // TODO
-    // let one: &GenericQuery = &Constant::new(1);
-    // let two: &GenericQuery = &Constant::new(2);
-    // let get_block_type: &GenericQuery = &GetBlockType::new();
-
-    // assert_eq!(one, two);
-    // assert_eq!(get_block_type, get_block_type);
-
-    // assert_ne!(one, two);
-    // assert_ne!(one, get_block_type);
   }
 }

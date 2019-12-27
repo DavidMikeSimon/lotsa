@@ -8,7 +8,6 @@ use serde::{Deserialize, Serialize};
 use crate::{
   block::{BlockType, UNKNOWN},
   chunk_pos::ChunkPos,
-  dirtiness_tracker::DirtinessTracker,
   query::BlockInfo,
 };
 
@@ -42,16 +41,12 @@ impl IndexMut<ChunkPos> for BlockTypesArray {
 pub struct Chunk {
   #[serde(with = "BigArray")]
   block_types: BlockTypesArray,
-
-  #[serde(skip)]
-  dirtiness_tracker: DirtinessTracker,
 }
 
 impl Chunk {
   pub fn new() -> Chunk {
     Chunk {
       block_types: [UNKNOWN; CHUNK_WIDTH_E3],
-      dirtiness_tracker: DirtinessTracker::new(),
     }
   }
 
