@@ -1,5 +1,5 @@
 use std::{
-  collections::hash_map::DefaultHasher,
+  collections::{hash_map::DefaultHasher, HashSet},
   fmt,
   hash::{Hash, Hasher},
   marker::PhantomData,
@@ -9,22 +9,29 @@ use crate::{
   block::{BlockType, UNKNOWN},
   chunk::Chunk,
   chunk_pos::ChunkPos,
+  loaded_chunk::LoadedChunk,
   query::{BlockInfo, Cacheability, Context, Query},
   relative_pos::RelativePos,
 };
 
 pub struct Simulator {
   updaters: Vec<(BlockType, Box<Updater>)>,
+  cacheabilities: HashSet<Cacheability>,
 }
 
 pub struct Updater {
   // TODO: Use a builder pattern so that updater_fn doesn't need to be wrapped in Option
   updater_fn: Option<Box<dyn Fn(&UpdaterHandle) -> Option<BlockType>>>,
-  cacheability: Cacheability
+  cacheability: Cacheability,
 }
 
 impl Updater {
-  fn new() -> Updater { Updater { updater_fn: None, cacheability: Cacheability::Forever } }
+  fn new() -> Updater {
+    Updater {
+      updater_fn: None,
+      cacheability: Cacheability::Forever,
+    }
+  }
 
   fn run(&self, chunk: &Chunk, pos: ChunkPos) -> Option<BlockType> {
     let handle = UpdaterHandle {
@@ -129,22 +136,24 @@ impl Simulator {
   pub fn new() -> Simulator {
     Simulator {
       updaters: Vec::new(),
+      cacheabilities: HashSet::new(),
     }
   }
 
   pub fn add_updater(&mut self, target: BlockType, setup_fn: fn(&mut Updater)) {
     let mut updater = Box::new(Updater::new());
     setup_fn(&mut updater);
+    self.cacheabilities.insert(updater.cacheability.clone());
     self.updaters.push((target, updater));
   }
 
-  pub fn step(&self, chunk: &mut Chunk) {
+  pub fn step(&self, loaded_chunk: &mut LoadedChunk) {
     let mut updates: Vec<BlockTypeUpdate> = Vec::new();
 
     for (target_block_type, updater) in self.updaters.iter() {
-      for (pos, block) in chunk.blocks_iter() {
+      for (pos, block) in loaded_chunk.considerable_blocks_iter(&updater.cacheability) {
         if target_block_type == &block.block_type {
-          if let Some(new_block_type) = updater.run(&chunk, pos) {
+          if let Some(new_block_type) = updater.run(loaded_chunk.get(), pos) {
             updates.push(BlockTypeUpdate {
               pos,
               block_type: new_block_type,
@@ -154,8 +163,10 @@ impl Simulator {
       }
     }
 
+    loaded_chunk.reset_cache_busters(self.cacheabilities.iter());
+
     for update in updates {
-      chunk.set_block_type(update.pos, update.block_type);
+      loaded_chunk.set_block_type(update.pos, update.block_type);
     }
   }
 }

@@ -1,12 +1,10 @@
 use roaring::RoaringBitmap;
 
-use crate::{
-  chunk_pos::ChunkPos,
-};
+use crate::{chunk_pos::ChunkPos, relative_pos::RelativePos};
 
 #[derive(Clone)]
 pub struct ChunkIndex {
-  index: RoaringBitmap
+  index: RoaringBitmap,
 }
 
 impl ChunkIndex {
@@ -16,20 +14,31 @@ impl ChunkIndex {
     }
   }
 
-  pub fn mark(&mut self, pos: ChunkPos) {
-    self.index.insert(pos.raw_n() as u32);
+  pub fn mark(&mut self, pos: ChunkPos) { self.index.insert(pos.raw_n() as u32); }
+
+  pub fn mark_chebyshev_neighborhood(&mut self, pos: ChunkPos, distance: u8) {
+    // TODO: Z
+    let d = distance as i8;
+    for y_offset in -d..=d {
+      for x_offset in -d..=d {
+        let relative_pos = RelativePos::new(x_offset, y_offset, 0);
+        match pos.offset(relative_pos) {
+          None => (), // TODO: Propagate to neighboring chunk?
+          Some(offset_pos) => self.mark(offset_pos),
+        }
+      }
+    }
   }
 
-  pub fn consider(&self, pos: ChunkPos) -> bool {
-    self.index.contains(pos.raw_n() as u32)
-  }
+  pub fn consider(&self, pos: ChunkPos) -> bool { self.index.contains(pos.raw_n() as u32) }
 
-  pub fn clear(&mut self) {
-    self.index.clear();
-  }
+  pub fn clear(&mut self) { self.index.clear(); }
 
-  pub fn iter<'a>(&'a self) -> impl Iterator<Item=ChunkPos> + 'a {
-    self.index.iter().map(|n| ChunkPos::new_from_raw_n(n as u16))
+  pub fn iter<'a>(&'a self) -> impl Iterator<Item = ChunkPos> + 'a {
+    self
+      .index
+      .iter()
+      .map(|n| ChunkPos::new_from_raw_n(n as u16))
   }
 }
 
@@ -88,5 +97,24 @@ mod tests {
     index.clear();
     assert_eq!(index.consider(pos), false);
     assert_eq!(index.iter().collect::<Vec<ChunkPos>>().len(), 0);
+  }
+
+  #[test]
+  fn test_mark_chebyshev() {
+    let mut index = ChunkIndex::new();
+
+    index.mark_chebyshev_neighborhood(ChunkPos::new(5, 5, 5), 2);
+
+    assert_eq!(index.consider(ChunkPos::new(5, 5, 5)), true);
+    assert_eq!(index.consider(ChunkPos::new(4, 4, 5)), true);
+    assert_eq!(index.consider(ChunkPos::new(3, 3, 5)), true);
+    assert_eq!(index.consider(ChunkPos::new(6, 6, 5)), true);
+    assert_eq!(index.consider(ChunkPos::new(7, 7, 5)), true);
+    assert_eq!(index.consider(ChunkPos::new(3, 7, 5)), true);
+    assert_eq!(index.consider(ChunkPos::new(7, 3, 5)), true);
+
+    assert_eq!(index.consider(ChunkPos::new(2, 2, 5)), false);
+    assert_eq!(index.consider(ChunkPos::new(8, 8, 5)), false);
+    assert_eq!(index.consider(ChunkPos::new(5, 8, 5)), false);
   }
 }

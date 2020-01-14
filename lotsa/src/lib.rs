@@ -28,6 +28,7 @@ pub mod chunk_index;
 pub mod chunk_pos;
 pub mod debug;
 pub mod life;
+pub mod loaded_chunk;
 pub mod query;
 pub mod relative_pos;
 pub mod sim;

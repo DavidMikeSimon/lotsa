@@ -21,7 +21,7 @@ impl ChunkPos {
 
   pub fn new_from_raw_n(n: u16) -> Self {
     debug_assert!((n as usize) < CHUNK_WIDTH_E3);
-    ChunkPos { n: n }
+    ChunkPos { n }
   }
 
   pub fn raw_n(self) -> u16 { self.n }

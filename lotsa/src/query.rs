@@ -1,4 +1,9 @@
-use std::{cmp::max, marker::PhantomData};
+use std::{
+  cmp::max,
+  collections::hash_map::DefaultHasher,
+  hash::{Hash, Hasher},
+  marker::PhantomData,
+};
 
 use crate::{block::BlockType, relative_pos::RelativePos, unique_descrip::UniqueDescrip};
 
@@ -43,8 +48,8 @@ pub enum Cacheability {
     fields: Vec<CacheableField>,
   },
   UntilChangeInChebyshevNeighborhood {
-    distance: u8,
     fields: Vec<CacheableField>,
+    distance: u8,
   },
 }
 
@@ -83,7 +88,7 @@ impl Cacheability {
           fields: CacheableField::merge(fields_a, fields_b),
         }
       },
-      //TODO: This might be non-optimal in some cases, could be better if we
+      // TODO: This might be non-optimal in some cases, could be better if we
       // had a Cacheability variant that represented a set, e.g. Vec<Cacheability>,
       // or if we generally held on to sets of Cacheability rather than singles
       (_, _) => UntilChangeInChebyshevNeighborhood {
@@ -107,6 +112,12 @@ impl Cacheability {
       UntilChangeInSelf { fields } => &fields,
       UntilChangeInChebyshevNeighborhood { fields, .. } => &fields,
     }
+  }
+
+  pub fn hashcode(&self) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    self.hash(&mut hasher);
+    hasher.finish()
   }
 }
 

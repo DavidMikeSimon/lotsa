@@ -60,6 +60,7 @@ where
 {
   fn eval(&'a self, n: &'a dyn Context, pos: RelativePos) -> Box<dyn Iterator<Item = T> + 'a> {
     let d = self.distance as i8;
+    // TODO: Z
     Box::new((-d..=d).flat_map(move |y_offset| {
       (-d..=d).map(move |x_offset| {
         self.map_expr.eval(

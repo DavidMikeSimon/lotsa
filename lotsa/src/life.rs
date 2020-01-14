@@ -41,7 +41,7 @@ pub fn init(sim: &mut Simulator) {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{block::UNKNOWN, chunk::Chunk, debug::Debugger};
+  use crate::{block::UNKNOWN, chunk::Chunk, debug::Debugger, loaded_chunk::LoadedChunk};
   use test::Bencher;
 
   #[test]
@@ -58,12 +58,14 @@ mod tests {
        .....",
     );
 
+    let mut loaded_chunk = LoadedChunk::new(chunk);
+
     let mut sim = Simulator::new();
     init(&mut sim);
 
-    sim.step(&mut chunk);
+    sim.step(&mut loaded_chunk);
     debugger.assert_match(
-      &chunk,
+      loaded_chunk.get(),
       ".....
        ..L..
        ..L..
@@ -71,9 +73,9 @@ mod tests {
        .....",
     );
 
-    sim.step(&mut chunk);
+    sim.step(&mut loaded_chunk);
     debugger.assert_match(
-      &chunk,
+      loaded_chunk.get(),
       ".....
        .....
        .LLL.
@@ -100,13 +102,13 @@ mod tests {
     init(&mut sim);
 
     b.iter(|| {
-      let mut chunk = base_chunk.clone();
+      let mut loaded_chunk = LoadedChunk::new(base_chunk.clone());
 
       for _ in 1..20 {
-        sim.step(&mut chunk);
+        sim.step(&mut loaded_chunk);
       }
 
-      debugger.dump(&chunk)
+      debugger.dump(loaded_chunk.get())
     });
   }
 }
