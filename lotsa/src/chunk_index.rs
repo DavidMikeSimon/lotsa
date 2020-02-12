@@ -2,7 +2,7 @@ use roaring::RoaringBitmap;
 
 use crate::{chunk_pos::ChunkPos, relative_pos::RelativePos};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ChunkIndex {
   index: RoaringBitmap,
 }
@@ -17,14 +17,15 @@ impl ChunkIndex {
   pub fn mark(&mut self, pos: ChunkPos) { self.index.insert(pos.raw_n() as u32); }
 
   pub fn mark_chebyshev_neighborhood(&mut self, pos: ChunkPos, distance: u8) {
-    // TODO: Z
     let d = distance as i8;
     for y_offset in -d..=d {
       for x_offset in -d..=d {
-        let relative_pos = RelativePos::new(x_offset, y_offset, 0);
-        match pos.offset(relative_pos) {
-          None => (), // TODO: Propagate to neighboring chunk?
-          Some(offset_pos) => self.mark(offset_pos),
+        for z_offset in -d..=d {
+          let relative_pos = RelativePos::new(x_offset, y_offset, z_offset);
+          match pos.offset(relative_pos) {
+            None => (), // TODO: Propagate to neighboring chunk?
+            Some(offset_pos) => self.mark(offset_pos),
+          }
         }
       }
     }
@@ -112,9 +113,11 @@ mod tests {
     assert_eq!(index.consider(ChunkPos::new(7, 7, 5)), true);
     assert_eq!(index.consider(ChunkPos::new(3, 7, 5)), true);
     assert_eq!(index.consider(ChunkPos::new(7, 3, 5)), true);
+    assert_eq!(index.consider(ChunkPos::new(7, 7, 7)), true);
 
     assert_eq!(index.consider(ChunkPos::new(2, 2, 5)), false);
     assert_eq!(index.consider(ChunkPos::new(8, 8, 5)), false);
     assert_eq!(index.consider(ChunkPos::new(5, 8, 5)), false);
+    assert_eq!(index.consider(ChunkPos::new(7, 7, 8)), false);
   }
 }

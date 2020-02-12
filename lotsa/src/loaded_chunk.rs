@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap};
 
 use crate::{
   block::BlockType,
@@ -60,8 +60,23 @@ impl LoadedChunk {
 
   pub fn considerable_blocks_iter<'a>(
     &'a self,
-    _cacheability: &Cacheability,
-  ) -> impl Iterator<Item = (ChunkPos, BlockInfo)> + 'a {
-    self.chunk.blocks_iter()
+    cacheability: &Cacheability,
+  ) -> Box<dyn Iterator<Item = (ChunkPos, BlockInfo)> + 'a> {
+    match cacheability {
+      Cacheability::DontCache =>
+        Box::new(self.chunk.blocks_iter()),
+      Cacheability::Forever =>
+        Box::new(self.chunk.blocks_iter()), // FIXME: Only first run
+      _ => {
+        match self.cache_busters.get(cacheability) {
+          None => Box::new(self.chunk.blocks_iter()),
+          Some(chunk_index) => {
+            Box::new(
+              chunk_index.iter().map(move |chunk_pos| (chunk_pos, self.chunk.get_block(chunk_pos)) )
+            )
+          }
+        }
+      }
+    }
   }
 }
